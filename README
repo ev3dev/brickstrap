@@ -1,0 +1,80 @@
+Polystrap is a tool to create a foreign architecture rootfs without needing
+superuser privileges by using multistrap, fakeroot, fakechroot and qemu user
+mode emulation.
+
+While I wanted to build without superuser privileges, multistrap would never
+offer mechanisms that would allow me to do so. Hence I wrote this script which
+wraps multistrap. Since I wanted to keep it as simple as possible, a fully
+functional polystrap will need nothing more than a multistrap.conf, a hooks
+directory and a rootfs tree skeleton. Stuff like packages directory, and config
+file are optional and can be replaced by editing multistrap.conf and passing
+commandline options. Without comments the scripts is currently around 120 lines
+and I have no intention to make it much more complex.
+
+Polystrap is invoked as such:
+
+	./polystrap.sh PLATFORM
+
+PLATFORM is a directory that at least contains a multistrap.conf. The
+multistrap.conf may contain variables from polystrap.sh.
+
+In the normal case PLATFORM will contain some additional bits.
+
+	PLATFORM/config - A file that is sourced by ./polystrap.sh and
+	                  contains variable declarations like:
+	                      SUITE   - stable, testing, unstable
+	                      ARCH    - armel, armhf, amd64, i386
+	                      ROOTDIR - where the rootfs is created
+	                      MIRROR  - debian mirror to use for packages
+	                  The file is not strictly needed because the options
+	                  can also be set by commandline arguments and the
+	                  script will fall back to ./default/config.
+	PLATFORM/debconfseed.txt - as the name suggests
+	PLATFORM/hooks  - A directory that contains files that are sourced by
+	                  polystrap after packages are installed.
+	PLATFORM/packages - Contains files with one debian package per line.
+	                    Grouping packages by that allows easier selection.
+	PLATFORM/root   - Contains a rootfs tree that is copied to the target
+	                  directory after packages are unpacked by multistrap.
+
+Reasonable examples of how those pieces look like can be found in the defaults
+directory.
+
+Everything from the PLATFORM/config file can be overwritten by commandline
+options:
+
+	-s suite
+	-a arch
+	-d rootdir
+	-m mirror
+
+Additionally the following option allows to specify a list of packages that is
+then used instead of the contents of the PLATFORM/packages directory:
+
+	-p packages
+
+How the script works:
+
+ *) re-execute itself in fakeroot
+ *) source default/config
+ *) source PLATFORM/config
+ *) determine package selection by PLATFORM/packages or commandline argument
+ *) create multistrap.conf in /tmp from PLATFORM/multistrap.conf
+ *) run multistrap
+ *) copy contents of PLATFORM/root
+ *) copy qemu usermode binary
+ *) set debconf selections
+ *) run preinst scripts
+ *) configure packages
+ *) source PLATFORM/hooks
+ *) cleanup
+ *) generate tarball
+
+When creating a directory for a new target one can either just copy the defaut
+directory or use the ./newtarget.sh script which will use symlinks where it
+makes sense, will not copy the whole package selection and will set hostname
+according to the target name.
+
+Example config and multistrap.conf for usage of armhf is given in the default
+directory as config.armhf and multistrap.conf.armhf. Some fakechroot bugs
+(#611156) is unfortunately blocking this functionality right now.
