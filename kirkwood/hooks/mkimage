@@ -1,0 +1,2 @@
+mkimage -A arm -O linux -T kernel  -C none -n uImage  -a 0x00008000 -e 0x00008000 -d $ROOTDIR/boot/vmlinuz-*-kirkwood $ROOTDIR/boot/uImage
+mkimage -A arm -O linux -T ramdisk -C none -n uInitrd -d $ROOTDIR/boot/initrd.img-*-kirkwood $ROOTDIR/boot/uInitrd

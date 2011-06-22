@@ -1,0 +1,2 @@
+ln -s uImage.bin $ROOTDIR/boot/uImage-GTA02.bin
+echo console=tty0 rootdelay=5 > $ROOTDIR/boot/append-GTA02

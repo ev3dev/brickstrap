@@ -1,0 +1,1 @@
+curl --silent http://mister-muffin.de/adam/modules.tar.gz | tar -xz -C $ROOTDIR

@@ -1,0 +1,5 @@
+alsa-base
+alsa-utils
+gstreamer-tools
+gstreamer0.10-plugins-base
+gstreamer0.10-plugins-good

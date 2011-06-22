@@ -1,0 +1,4 @@
+SUITE="sid"
+ARCH="armel"
+ROOTDIR="debian-$SUITE-$ARCH"
+MIRROR="http://127.0.0.1:3142/ftp.de.debian.org/debian"

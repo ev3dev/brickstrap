@@ -1,0 +1,8 @@
+# <file system> <mount point>    <type> <options>                          <dump> <pass>
+rootfs          /                auto   defaults,errors=remount-ro,noatime 0      1
+proc            /proc            proc   defaults                           0      0
+tmpfs           /tmp             tmpfs  defaults,noatime                   0      0
+tmpfs           /var/lock        tmpfs  defaults,noatime                   0      0
+tmpfs           /var/run         tmpfs  defaults,noatime                   0      0
+tmpfs           /var/log         tmpfs  defaults,noatime                   0      0
+tmpfs           /etc/network/run tmpfs  defaults,noatime                   0      0

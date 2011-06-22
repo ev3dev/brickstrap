@@ -1,0 +1,5 @@
+xserver-xorg-input-evdev
+xserver-xorg
+xserver-xorg-video-fbdev
+xterm
+nodm

@@ -1,0 +1,23 @@
+cat > $ROOTDIR/etc/init.d/firstboot << __END__
+#!/bin/sh -e
+### BEGIN INIT INFO
+# Provides: firstboot
+# Required-Start: \$all
+# Required-Stop:
+# Default-Start: S
+# Default-Stop:
+### END INIT INFO
+
+for f in rsa dsa ecdsa; do rm -rf /etc/ssh/ssh_host_\${f}_key; done
+echo "generating ssh rsa key..."
+ssh-keygen -q -t rsa -f /etc/ssh/ssh_host_rsa_key -C "" -N ""
+echo "generating ssh dsa key..."
+ssh-keygen -q -t dsa -f /etc/ssh/ssh_host_dsa_key -C "" -N ""
+echo "generating ssh ecdsa key..."
+ssh-keygen -q -t ecdsa -f /etc/ssh/ssh_host_ecdsa_key -C "" -N ""
+
+update-rc.d -f firstboot remove
+__END__
+
+chmod +x $ROOTDIR/etc/init.d/firstboot
+fakechroot chroot $ROOTDIR update-rc.d firstboot start 99 S

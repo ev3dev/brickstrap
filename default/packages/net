@@ -1,0 +1,12 @@
+curl
+wget
+ntpdate
+vpnc
+rsync
+dhcp3-client
+ifupdown
+net-tools
+iproute
+dnsutils
+iputils-ping
+ppp
