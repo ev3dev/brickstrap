@@ -82,11 +82,11 @@ fi
 PACKAGES="$PACKAGES binutils"
 
 echo "--------------------------"
-echo "suit: $SUITE"
-echo "arch: $ARCH"
-echo "root: $ROOTDIR"
-echo "mirr: $MIRROR"
-echo "pkgs: $PACKAGES"
+echo "suite:   $SUITE"
+echo "arch:    $ARCH"
+echo "rootdir: $ROOTDIR"
+echo "mirror:  $MIRROR"
+echo "pkgs:    $PACKAGES"
 echo "--------------------------"
 
 [ -e "$ROOTDIR.tar" ] && { echo "tarball still exists"; exit; }
