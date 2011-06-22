@@ -55,8 +55,6 @@ PLATFORM="$1"
 
 [ ! -r "$PLATFORM" ] && { echo "cannot find target directory: $PLATFORM"; exit; }
 [ ! -r "$PLATFORM/multistrap.conf" ] && { echo "cannot read multistrap config: $PLATFORM/multistrap.conf"; exit; }
-[ ! -r "$PLATFORM/hooks" ] && { echo "cannot read hooks directory: $PLATFORM/hooks"; exit; }
-[ ! -r "$PLATFORM/root" ] && { echo "cannot read root directory: $PLATFORM/root"; exit; }
 
 # source default options
 . "default/config"
@@ -108,7 +106,9 @@ mv $ROOTDIR/sbin/ldconfig $ROOTDIR/sbin/ldconfig.REAL
 mv $ROOTDIR/usr/bin/ldd $ROOTDIR/usr/bin/ldd.REAL
 
 # copy initial directory tree - dereference symlinks
-cp --recursive --dereference $PLATFORM/root/* $ROOTDIR/
+if [ -r "$PLATFORM/root" ]; then
+	cp --recursive --dereference $PLATFORM/root/* $ROOTDIR/
+fi
 
 # copy qemu usermode binary
 if [ $ARCH != "`dpkg --print-architecture`" ]; then
@@ -140,9 +140,11 @@ done
 fakechroot chroot $ROOTDIR /usr/bin/dpkg --configure -a || fakechroot chroot $ROOTDIR /usr/bin/dpkg --configure -a
 
 # source hooks
-for f in $PLATFORM/hooks/*; do
-	. $f
-done
+if [ -r "$PLATFORM/hooks" ]; then
+	for f in $PLATFORM/hooks/*; do
+		. $f
+	done
+fi
 
 #cleanup
 rm $ROOTDIR/sbin/ldconfig $ROOTDIR/usr/bin/ldd
