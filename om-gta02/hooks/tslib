@@ -1,0 +1,5 @@
+curl http://lindi.iki.fi/lindi/tslib/libts-0.0-0_1.0-8lindi1_armel.deb > $ROOTDIR/libts.deb
+curl http://lindi.iki.fi/lindi/tslib/libts-bin_1.0-8lindi1_armel.deb > $ROOTDIR/libts-bin.deb
+curl http://lindi.iki.fi/lindi/tslib/tsconf_1.0-8lindi1_all.deb > $ROOTDIR/tsconf.deb
+fakechroot chroot $ROOTDIR dpkg -i /libts.deb /libts-bin.deb /tsconf.deb
+rm $ROOTDIR/libts.deb $ROOTDIR/libts-bin.deb $ROOTDIR/tsconf.deb
