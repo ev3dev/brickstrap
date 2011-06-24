@@ -93,13 +93,14 @@ echo "--------------------------"
 [ -e "$ROOTDIR" ] && { echo "root directory still exists"; exit; }
 
 # create multistrap.conf
-echo -n > /tmp/multistrap.conf
+echo -n > /tmp/multistrap.conf.$$
 while read line; do
-        eval echo $line >> /tmp/multistrap.conf
+        eval echo $line >> /tmp/multistrap.conf.$$
 done < $PLATFORM/multistrap.conf
 
 # download and extract packages
-multistrap -f /tmp/multistrap.conf
+multistrap -f /tmp/multistrap.conf.$$
+rm -f /tmp/multistrap.conf.$$
 
 # backup ldconfig and ldd
 mv $ROOTDIR/sbin/ldconfig $ROOTDIR/sbin/ldconfig.REAL
