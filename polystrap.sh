@@ -26,13 +26,13 @@
 set -ex
 
 usage() {
-	echo "Usage: $0: [-s suite] [-a arch] [-d directory] [-m mirror] [-p packages] platform\n"
+	echo "Usage: $0: [-s suite] [-a arch] [-d directory] [-m mirror] [-p packages] platform\n" >&2
 }
 
 export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true LC_ALL=C LANGUAGE=C LANG=C
 
 if [ "$FAKEROOTKEY" = "" ]; then
-        echo "re-executing script inside fakeroot"
+        echo "re-executing script inside fakeroot" >&2
         fakeroot "$0" "$@";
         exit
 fi
@@ -49,12 +49,12 @@ while getopts s:a:d:m:p: opt; do
 done
 shift $(($OPTIND - 1))
 
-[ "$#" -ne 1 ] && { echo "too many positional arguments"; usage; exit 1; }
+[ "$#" -ne 1 ] && { echo "too many positional arguments" >&2; usage; exit 1; }
 
 PLATFORM="$1"
 
-[ ! -r "$PLATFORM" ] && { echo "cannot find target directory: $PLATFORM"; exit 1; }
-[ ! -r "$PLATFORM/multistrap.conf" ] && { echo "cannot read multistrap config: $PLATFORM/multistrap.conf"; exit 1; }
+[ ! -r "$PLATFORM" ] && { echo "cannot find target directory: $PLATFORM" >&2; exit 1; }
+[ ! -r "$PLATFORM/multistrap.conf" ] && { echo "cannot read multistrap config: $PLATFORM/multistrap.conf" >&2; exit 1; }
 
 # source default options
 . "default/config"
@@ -81,16 +81,16 @@ fi
 # binutils must always be installed for objdump for fake ldd
 PACKAGES="$PACKAGES binutils"
 
-echo "--------------------------"
-echo "suite:   $SUITE"
-echo "arch:    $ARCH"
-echo "rootdir: $ROOTDIR"
-echo "mirror:  $MIRROR"
-echo "pkgs:    $PACKAGES"
-echo "--------------------------"
+echo "--------------------------" >&2
+echo "suite:   $SUITE" >&2
+echo "arch:    $ARCH" >&2
+echo "rootdir: $ROOTDIR" >&2
+echo "mirror:  $MIRROR" >&2
+echo "pkgs:    $PACKAGES" >&2
+echo "--------------------------" >&2
 
-[ -e "$ROOTDIR.tar" ] && { echo "tarball still exists"; exit 1; }
-[ -e "$ROOTDIR" ] && { echo "root directory still exists"; exit 1; }
+[ -e "$ROOTDIR.tar" ] && { echo "tarball still exists" >&2; exit 1; }
+[ -e "$ROOTDIR" ] && { echo "root directory still exists" >&2; exit 1; }
 
 # create multistrap.conf
 MULTISTRAPCONF=`tempfile -d . -p multistrap`
@@ -121,7 +121,7 @@ if [ $ARCH != "`dpkg --print-architecture`" ]; then
 		armel) cp `which qemu-arm-static` $ROOTDIR/usr/bin;;
 		lpia) cp `which qemu-i386-static` $ROOTDIR/usr/bin;;
 		powerpc) cp `which qemu-ppc-static` $ROOTDIR/usr/bin;;
-		*) echo "unknown architecture: $ARCH"; exit 1;;
+		*) echo "unknown architecture: $ARCH" >&2; exit 1;;
 	esac
 fi
 
