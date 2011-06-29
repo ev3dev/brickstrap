@@ -30,6 +30,7 @@ usage() {
 }
 
 export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true LC_ALL=C LANGUAGE=C LANG=C
+export PATH=$PATH:/usr/sbin:/sbin
 
 if [ "$FAKEROOTKEY" = "" ]; then
         echo "re-executing script inside fakeroot" >&2
