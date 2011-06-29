@@ -49,12 +49,12 @@ while getopts s:a:d:m:p: opt; do
 done
 shift $(($OPTIND - 1))
 
-[ "$#" -ne 1 ] && { echo "too many positional arguments"; usage; exit; }
+[ "$#" -ne 1 ] && { echo "too many positional arguments"; usage; exit 1; }
 
 PLATFORM="$1"
 
-[ ! -r "$PLATFORM" ] && { echo "cannot find target directory: $PLATFORM"; exit; }
-[ ! -r "$PLATFORM/multistrap.conf" ] && { echo "cannot read multistrap config: $PLATFORM/multistrap.conf"; exit; }
+[ ! -r "$PLATFORM" ] && { echo "cannot find target directory: $PLATFORM"; exit 1; }
+[ ! -r "$PLATFORM/multistrap.conf" ] && { echo "cannot read multistrap config: $PLATFORM/multistrap.conf"; exit 1; }
 
 # source default options
 . "default/config"
@@ -89,8 +89,8 @@ echo "mirror:  $MIRROR"
 echo "pkgs:    $PACKAGES"
 echo "--------------------------"
 
-[ -e "$ROOTDIR.tar" ] && { echo "tarball still exists"; exit; }
-[ -e "$ROOTDIR" ] && { echo "root directory still exists"; exit; }
+[ -e "$ROOTDIR.tar" ] && { echo "tarball still exists"; exit 1; }
+[ -e "$ROOTDIR" ] && { echo "root directory still exists"; exit 1; }
 
 # create multistrap.conf
 MULTISTRAPCONF=`tempfile -d . -p multistrap`
