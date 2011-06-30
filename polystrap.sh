@@ -33,9 +33,9 @@ export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true LC_ALL=C 
 export PATH=$PATH:/usr/sbin:/sbin
 
 if [ "$FAKEROOTKEY" = "" ]; then
-        echo "I: re-executing script inside fakeroot" >&2
-        fakeroot "$0" "$@";
-        exit
+	echo "I: re-executing script inside fakeroot" >&2
+	fakeroot "$0" "$@";
+	exit
 fi
 
 while getopts s:a:d:m:p: opt; do
@@ -98,7 +98,7 @@ echo "I: create multistrap.conf" >&2
 MULTISTRAPCONF=`tempfile -d . -p multistrap`
 echo -n > "$MULTISTRAPCONF"
 while read line; do
-        eval echo $line >> "$MULTISTRAPCONF"
+	eval echo $line >> "$MULTISTRAPCONF"
 done < $PLATFORM/multistrap.conf
 
 # download and extract packages
@@ -143,9 +143,9 @@ fi
 
 # run preinst scripts
 for script in $ROOTDIR/var/lib/dpkg/info/*.preinst; do
-        [ "$script" = "$ROOTDIR/var/lib/dpkg/info/bash.preinst" ] && continue
+	[ "$script" = "$ROOTDIR/var/lib/dpkg/info/bash.preinst" ] && continue
 	echo "I: run preinst script ${script##$ROOTDIR}" >&2
-        fakechroot chroot $ROOTDIR ${script##$ROOTDIR} install
+	fakechroot chroot $ROOTDIR ${script##$ROOTDIR} install
 done
 
 # run dpkg --configure -a twice because of errors during the first run
