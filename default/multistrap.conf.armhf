@@ -22,7 +22,7 @@ suite=unreleased
 omitdebsrc=true
 
 [Debian]
-source=http://ftp.de.debian.org/debian
+source=$MIRROR
 keyring=debian-archive-keyring
 suite=$SUITE
 omitdebsrc=true
