@@ -26,7 +26,7 @@
 set -e
 
 usage() {
-	echo "Usage: $0: [-s suite] [-a arch] [-d directory] [-m mirror] [-p packages] platform\n" >&2
+	echo "Usage: $0: [-n] [-s suite] [-a arch] [-d directory] [-m mirror] [-p packages] platform\n" >&2
 }
 
 export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true LC_ALL=C LANGUAGE=C LANG=C
@@ -38,13 +38,15 @@ if [ "$FAKEROOTKEY" = "" ]; then
 	exit
 fi
 
-while getopts s:a:d:m:p: opt; do
+MSTRAP_SIM=
+while getopts s:a:d:m:p:n opt; do
 	case $opt in
 	s) _SUITE="$OPTARG";;
 	a) _ARCH="$OPTARG";;
 	d) _ROOTDIR="$OPTARG";;
 	m) _MIRROR="$OPTARG";;
 	p) _PACKAGES="$OPTARG";;
+	n) MSTRAP_SIM="--simulate";;
 	?) usage; exit 1;;
 	esac
 done
@@ -103,7 +105,9 @@ done < $PLATFORM/multistrap.conf
 
 # download and extract packages
 echo "I: run multistrap" >&2
-multistrap -f "$MULTISTRAPCONF"
+multistrap $MSTRAP_SIM -f "$MULTISTRAPCONF"
+[ -z "$MSTRAP_SIM" ] || exit 0
+
 rm -f "$MULTISTRAPCONF"
 
 # backup ldconfig and ldd
