@@ -121,22 +121,6 @@ if [ -r "$PLATFORM/root" ]; then
 	cp --recursive --dereference $PLATFORM/root/* $ROOTDIR/
 fi
 
-# copy qemu usermode binary
-QEMUARCH=
-if [ $ARCH != "`dpkg --print-architecture`" ]; then
-	case $ARCH in
-		alpha|i386|m68k|mips|mipsel|ppc64|sh4|sh4eb|sparc|sparc64)
-		         QEMUARCH=$ARCH;;
-		arm*)    QEMUARCH=arm;; # for arm, armel, armeb, armhf
-		amd64)   QEMUARCH=x86_64;;
-		lpia)    QEMUARCH=i386;;
-		powerpc) QEMUARCH=ppc;;
-		*) echo "unknown architecture: $ARCH" >&2; exit 1;;
-	esac
-fi
-echo "I: copy qemu-$QEMUARCH-static into $ROOTDIR" >&2
-cp `which qemu-$QEMUARCH-static` $ROOTDIR/usr/bin
-
 # preseed debconf
 echo "I: preseed debconf" >&2
 if [ -r "$PLATFORM/debconfseed.txt" ]; then
