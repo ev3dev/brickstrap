@@ -1,6 +1,12 @@
-Polystrap is a tool to create a foreign architecture rootfs without needing
-superuser privileges by using multistrap, fakeroot, fakechroot and qemu user
-mode emulation.
+Polystrap is a tool to create a foreign architecture rootfs without
+needing superuser privileges by using multistrap, fakeroot, fakechroot
+and qemu user mode emulation from the qemu-user-static package.
+
+The proper qemu-*-static binary must be properly configured
+(eg. /etc/qemu-binfmt/arm pointing to /usr/arm-linux-gnueabi/ with
+xapt-installed libc and possibly other packages); package
+binfmt-support (which is only a "Recommends" of qemu-user-static) must
+also be installed.
 
 While I wanted to build without superuser privileges, multistrap would never
 offer mechanisms that would allow me to do so. Hence I wrote this script which
@@ -29,6 +35,9 @@ In the normal case PLATFORM will contain some additional bits.
 	                  The file is not strictly needed because the options
 	                  can also be set by commandline arguments and the
 	                  script will fall back to ./default/config.
+	                  Correct settings for ARCH and ROOTDIR are necessary
+	                  for proper operation, whereas other parameters are
+	                  only used if your multistrap.conf references them.
 	PLATFORM/debconfseed.txt - as the name suggests
 	PLATFORM/hooks  - A directory that contains files that are sourced by
 	                  polystrap after packages are installed.
