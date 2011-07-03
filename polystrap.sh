@@ -33,7 +33,7 @@ export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true LC_ALL=C 
 export PATH=$PATH:/usr/sbin:/sbin
 
 if [ "$FAKEROOTKEY" = "" ]; then
-	echo "I: re-executing script inside fakeroot" >&2
+	echo "I: re-executing script inside fakeroot"
 	fakeroot "$0" "$@";
 	exit
 fi
@@ -84,19 +84,19 @@ fi
 # binutils must always be installed for objdump for fake ldd
 PACKAGES="$PACKAGES binutils"
 
-echo "I: --------------------------" >&2
-echo "I: suite:   $SUITE"            >&2
-echo "I: arch:    $ARCH"             >&2
-echo "I: rootdir: $ROOTDIR"          >&2
-echo "I: mirror:  $MIRROR"           >&2
-echo "I: pkgs:    $PACKAGES"         >&2
-echo "I: --------------------------" >&2
+echo "I: --------------------------"
+echo "I: suite:   $SUITE"
+echo "I: arch:    $ARCH"
+echo "I: rootdir: $ROOTDIR"
+echo "I: mirror:  $MIRROR"
+echo "I: pkgs:    $PACKAGES"
+echo "I: --------------------------"
 
 [ -e "$ROOTDIR.tar" ] && { echo "tarball still exists" >&2; exit 1; }
 [ -e "$ROOTDIR" ] && { echo "root directory still exists" >&2; exit 1; }
 
 # create multistrap.conf
-echo "I: create multistrap.conf" >&2
+echo "I: create multistrap.conf"
 MULTISTRAPCONF=`tempfile -d . -p multistrap`
 echo -n > "$MULTISTRAPCONF"
 while read line; do
@@ -111,18 +111,18 @@ multistrap $MSTRAP_SIM -f "$MULTISTRAPCONF"
 rm -f "$MULTISTRAPCONF"
 
 # backup ldconfig and ldd
-echo "I: backup ldconfig and ldd" >&2
+echo "I: backup ldconfig and ldd"
 mv $ROOTDIR/sbin/ldconfig $ROOTDIR/sbin/ldconfig.REAL
 mv $ROOTDIR/usr/bin/ldd $ROOTDIR/usr/bin/ldd.REAL
 
 # copy initial directory tree - dereference symlinks
-echo "I: copy initial directory root tree $PLATFORM/root/ to $ROOTDIR/" >&2
+echo "I: copy initial directory root tree $PLATFORM/root/ to $ROOTDIR/"
 if [ -r "$PLATFORM/root" ]; then
 	cp --recursive --dereference $PLATFORM/root/* $ROOTDIR/
 fi
 
 # preseed debconf
-echo "I: preseed debconf" >&2
+echo "I: preseed debconf"
 if [ -r "$PLATFORM/debconfseed.txt" ]; then
 	cp "$PLATFORM/debconfseed.txt" $ROOTDIR/tmp/
 	fakechroot chroot $ROOTDIR debconf-set-selections /tmp/debconfseed.txt
@@ -132,24 +132,24 @@ fi
 # run preinst scripts
 for script in $ROOTDIR/var/lib/dpkg/info/*.preinst; do
 	[ "$script" = "$ROOTDIR/var/lib/dpkg/info/bash.preinst" ] && continue
-	echo "I: run preinst script ${script##$ROOTDIR}" >&2
+	echo "I: run preinst script ${script##$ROOTDIR}"
 	fakechroot chroot $ROOTDIR ${script##$ROOTDIR} install
 done
 
 # run dpkg --configure -a twice because of errors during the first run
-echo "I: configure packages" >&2
+echo "I: configure packages"
 fakechroot chroot $ROOTDIR /usr/bin/dpkg --configure -a || fakechroot chroot $ROOTDIR /usr/bin/dpkg --configure -a
 
 # source hooks
 if [ -r "$PLATFORM/hooks" ]; then
 	for f in $PLATFORM/hooks/*; do
-		echo "I: run hook $f" >&2
+		echo "I: run hook $f"
 		. $f
 	done
 fi
 
 #cleanup
-echo "I: cleanup" >&2
+echo "I: cleanup"
 rm $ROOTDIR/sbin/ldconfig $ROOTDIR/usr/bin/ldd
 mv $ROOTDIR/sbin/ldconfig.REAL $ROOTDIR/sbin/ldconfig
 mv $ROOTDIR/usr/bin/ldd.REAL $ROOTDIR/usr/bin/ldd
@@ -157,6 +157,6 @@ rm $ROOTDIR/usr/sbin/policy-rc.d
 
 # need to generate tar inside fakechroot so that absolute symlinks are correct
 # tar is clever enough to not try and put the archive inside itself
-echo "I: create tarball $ROOTDIR.tar" >&2
+echo "I: create tarball $ROOTDIR.tar"
 fakechroot chroot $ROOTDIR tar -cf $ROOTDIR.tar -C / .
 mv $ROOTDIR/$ROOTDIR.tar .
