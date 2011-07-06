@@ -1,7 +1,6 @@
  * create debian package
  * resolve fakechroot bug #611156
  * add qemu-user-static elf interpreter prefix environment variable bug #632192
- * find a way to install libfakechroot.so and libfakeroot-sysv.so into
-   /usr/lib/<arch-triplet>/ - maybe via multiarch?
+ * make fakeroot and fakechroot multiarch
  * wait for this patch to be in debian qemu for mips/mipsel support
    http://lists.gnu.org/archive/html/qemu-devel/2011-07/msg00313.html
