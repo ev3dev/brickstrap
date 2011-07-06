@@ -1,12 +1,72 @@
-Polystrap is a tool to create a foreign architecture rootfs without
-needing superuser privileges by using multistrap, fakeroot, fakechroot
-and qemu user mode emulation from the qemu-user-static package.
+Polystrap is a tool to create a foreign architecture rootfs without needing
+superuser privileges by using multistrap, fakeroot, fakechroot and qemu user
+mode emulation from the qemu-user package.
 
-The proper qemu-*-static binary must be properly configured
-(eg. /etc/qemu-binfmt/arm pointing to /usr/arm-linux-gnueabi/ with
-xapt-installed libc and possibly other packages); package
-binfmt-support (which is only a "Recommends" of qemu-user-static) must
-also be installed.
+
+QEMU USER MODE
+==============
+
+To make qemu user mode emulation work you need to install the packages
+qemu-user and binfmt-support. Until bug #632192 is fixed you will have to
+provide properly filled /etc/qemu-binfmt/$arch/ directories. $arch is a qemu
+arch (eg: arm for arm, armel and armhf). "properly filled" means, that you have
+to provide a root directory tree in that directory that fits the architecture
+you want to bootstrap debian for. There are a couple of ways to achieve that:
+
+1. manually download and `dpkg -x` the required packages into
+/etc/qemu-binfmt/$arch/
+
+2. copy over a just extracted multistrap run for your target system into
+/etc/qemu-binfmt/$arch/
+
+3. run the following multistrap.conf, configured for your target system to
+create a root directory tree that you copy into /etc/qemu-binfmt/$arch/
+
+-%<----------------------------
+[General]
+arch=
+directory=
+cleanup=true
+unpack=true
+noauth=true
+aptsources=Debian
+bootstrap=Debian
+allowrecommends=false
+addimportant=false
+omitrequired=true
+
+[Debian]
+packages=libc6 libselinux1 libacl1 man-db libstdc++6 libfreetype6 libx11-6 libfontconfig1
+source=http://cdn.debian.net/debian
+suite=sid
+omitdebsrc=true
+-%<----------------------------
+
+You can also avoid all this trouble by either waiting for #632192 to be fixed
+or by applying the patch from there to qemu and using the newly introduced
+environment variable QEMU_LD_PREFIX like so:
+
+QEMU_LD_PREFIX=/tmp/debian-sid/ ./polystrap.sh -d /tmp/debian-sid/ om-gta02
+
+
+FAKEROOT/FAKECHROOT
+===================
+
+Additionally you will need to have copies of libfakechroot.so and
+libfakeroot-sysv.so for your target architecture in /usr/lib/<arch-triplet>/.
+Get the debian packages of fakeroot and fakechroot for your target architecture
+and copy the shared libraries into /usr/lib/<arch-triplet>/. For example for
+arm do:
+
+wget http://ftp.debian.org/debian/pool/main/f/fakechroot/fakechroot_2.14-1_armel.deb
+wget http://ftp.debian.org/debian/pool/main/f/fakeroot/fakeroot_1.14.5-1_armel.deb
+sudo mkdir -p /usr/lib/arm-linux-gnueabi/
+dpkg-deb --fsys-tarfile fakeroot_1.14.5-1_armel.deb | sudo tar -xf - --strip-components=4 -C /usr/lib/arm-linux-gnueabi/ ./usr/lib/libfakeroot/libfakeroot-sysv.so
+dpkg-deb --fsys-tarfile fakechroot_2.14-1_armel.deb | sudo tar -xf - --strip-components=4 -C /usr/lib/arm-linux-gnueabi/ ./usr/lib/fakechroot/libfakechroot.so
+
+
+INNER WORKINGS
+==============
 
 While I wanted to build without superuser privileges, multistrap would never
 offer mechanisms that would allow me to do so. Hence I wrote this script which
