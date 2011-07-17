@@ -13,21 +13,21 @@ if [ "$#" -ne 1 ]; then
 	exit
 fi
 
-PLATFORM="$1"
+BOARD="$1"
 
-if [ -e "$PLATFORM" ]; then
+if [ -e "$BOARD" ]; then
 	echo "target already exists"
 	exit
 fi
 
-mkdir -p $PLATFORM/
-mkdir -p $PLATFORM/packages/
-mkdir -p $PLATFORM/root/etc/network/
-mkdir -p $PLATFORM/hooks/
+mkdir -p $BOARD/
+mkdir -p $BOARD/packages/
+mkdir -p $BOARD/root/etc/network/
+mkdir -p $BOARD/hooks/
 
-cp default/config $PLATFORM
-cp default/multistrap.conf $PLATFORM
-cp default/debconfseed.txt $PLATFORM
+cp default/config $BOARD
+cp default/multistrap.conf $BOARD
+cp default/debconfseed.txt $BOARD
 
 for f in packages/base \
          root/usr/sbin/policy-rc.d \
@@ -43,16 +43,16 @@ for f in packages/base \
          hooks/serial_tty \
          hooks/firstboot \
          hooks/empty_password; do
-	mkdir -p `dirname $PLATFORM/$f`
-	ln -s `dir_depth $f`default/$f $PLATFORM/$f
+	mkdir -p `dirname $BOARD/$f`
+	ln -s `dir_depth $f`default/$f $BOARD/$f
 done
 
-cat << __END__ > $PLATFORM/root/etc/hosts
+cat << __END__ > $BOARD/root/etc/hosts
 127.0.0.1 localhost
-127.0.0.1 $PLATFORM
+127.0.0.1 $BOARD
 __END__
 
-echo $PLATFORM > $PLATFORM/root/etc/hostname
+echo $BOARD > $BOARD/root/etc/hostname
 
-cp default/root/etc/fstab $PLATFORM/root/etc/
-cp default/root/etc/network/interfaces $PLATFORM/root/etc/network/
+cp default/root/etc/fstab $BOARD/root/etc/
+cp default/root/etc/network/interfaces $BOARD/root/etc/network/

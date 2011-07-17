@@ -79,14 +79,14 @@ and I have no intention to make it much more complex.
 
 Polystrap is invoked as such:
 
-	./polystrap.sh PLATFORM
+	./polystrap.sh BOARD
 
-PLATFORM is a directory that at least contains a multistrap.conf. The
+BOARD is a directory that at least contains a multistrap.conf. The
 multistrap.conf may contain variables from polystrap.sh.
 
-In the normal case PLATFORM will contain some additional bits.
+In the normal case BOARD will contain some additional bits.
 
-	PLATFORM/config - A file that is sourced by ./polystrap.sh and
+	BOARD/config - A file that is sourced by ./polystrap.sh and
 	                  contains variable declarations like:
 	                      SUITE   - stable, testing, unstable
 	                      ARCH    - armel, armhf, amd64, i386
@@ -98,18 +98,18 @@ In the normal case PLATFORM will contain some additional bits.
 	                  Correct settings for ARCH and ROOTDIR are necessary
 	                  for proper operation, whereas other parameters are
 	                  only used if your multistrap.conf references them.
-	PLATFORM/debconfseed.txt - as the name suggests
-	PLATFORM/hooks  - A directory that contains files that are sourced by
+	BOARD/debconfseed.txt - as the name suggests
+	BOARD/hooks  - A directory that contains files that are sourced by
 	                  polystrap after packages are installed.
-	PLATFORM/packages - Contains files with one debian package per line.
+	BOARD/packages - Contains files with one debian package per line.
 	                    Grouping packages by that allows easier selection.
-	PLATFORM/root   - Contains a rootfs tree that is copied to the target
+	BOARD/root   - Contains a rootfs tree that is copied to the target
 	                  directory after packages are unpacked by multistrap.
 
 Reasonable examples of how those pieces look like can be found in the defaults
 directory.
 
-Everything from the PLATFORM/config file can be overwritten by commandline
+Everything from the BOARD/config file can be overwritten by commandline
 options:
 
 	-s suite
@@ -118,7 +118,7 @@ options:
 	-m mirror
 
 Additionally the following option allows to specify a list of packages that is
-then used instead of the contents of the PLATFORM/packages directory:
+then used instead of the contents of the BOARD/packages directory:
 
 	-p packages
 
@@ -126,16 +126,16 @@ How the script works:
 
  *) re-execute itself in fakeroot
  *) source default/config
- *) source PLATFORM/config
- *) determine package selection by PLATFORM/packages or commandline argument
- *) create multistrap.conf in /tmp from PLATFORM/multistrap.conf
+ *) source BOARD/config
+ *) determine package selection by BOARD/packages or commandline argument
+ *) create multistrap.conf in /tmp from BOARD/multistrap.conf
  *) run multistrap
- *) copy contents of PLATFORM/root
+ *) copy contents of BOARD/root
  *) copy qemu usermode binary
  *) set debconf selections
  *) run preinst scripts
  *) configure packages
- *) source PLATFORM/hooks
+ *) source BOARD/hooks
  *) cleanup
  *) generate tarball
 
