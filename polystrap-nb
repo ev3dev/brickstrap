@@ -9,15 +9,15 @@ dir_depth() {
 }
 
 if [ "$#" -ne 1 ]; then
-	echo "you have to specify the new target name"
-	exit
+	echo 1>&2 "you have to specify the new board name"
+	exit 1
 fi
 
 BOARD="$1"
 
 if [ -e "$BOARD" ]; then
-	echo "target already exists"
-	exit
+	echo 1>&2 "board already exists"
+	exit 1
 fi
 
 mkdir -p $BOARD/
