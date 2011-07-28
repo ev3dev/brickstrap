@@ -3,5 +3,3 @@
  * add qemu-user-static elf interpreter prefix environment variable bug #632192
  * make fakeroot multiarch
  * make fakechroot multiarch #632954
- * wait for this patch to be in debian qemu for mips/mipsel support
-   http://lists.gnu.org/archive/html/qemu-devel/2011-07/msg00313.html
