@@ -1,5 +1,6 @@
  * create debian package
  * resolve fakechroot bug #611156
  * add qemu-user-static elf interpreter prefix environment variable bug #632192
+ * make qemu-user not trap itself in cyclic symlinks bug #636035
  * make fakeroot multiarch
  * make fakechroot multiarch #632954
