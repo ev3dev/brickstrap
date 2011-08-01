@@ -2,6 +2,6 @@
  * resolve fakechroot bug #611156
  * add qemu-user-static elf interpreter prefix environment variable bug #632192
  * make qemu-user not trap itself in cyclic symlinks bug #636035
- * make fakeroot multiarch
+ * make fakeroot multiarch #636192
  * make fakechroot multiarch #632954
  * gconf-schemas drops environment (and LD_* stuff) bug #636083
