@@ -93,7 +93,7 @@ echo "I: pkgs:    $PACKAGES"
 echo "I: --------------------------"
 
 [ -e "$ROOTDIR.tar" ] && { echo "tarball still exists" >&2; exit 1; }
-[ -e "$ROOTDIR" ] && { echo "root directory still exists" >&2; exit 1; }
+[ -e "$ROOTDIR" ] && { echo "root directory $ROOTDIR still exists" >&2; exit 1; }
 
 # create multistrap.conf
 echo "I: create multistrap.conf"
