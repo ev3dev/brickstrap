@@ -81,10 +81,8 @@ else
 	PACKAGES="$_PACKAGES"
 fi
 
-# binutils must always be installed for objdump for fake ldd
-PACKAGES="$PACKAGES binutils"
-
 export QEMU_LD_PREFIX="`readlink -m "$ROOTDIR"`"
+export FAKECHROOT_CMD_SUBST=/usr/bin/ldd=/usr/bin/ldd.fakechroot:/sbin/ldconfig=/bin/true
 
 echo "I: --------------------------"
 echo "I: suite:   $SUITE"
@@ -111,11 +109,6 @@ multistrap $MSTRAP_SIM -f "$MULTISTRAPCONF"
 [ -z "$MSTRAP_SIM" ] || exit 0
 
 rm -f "$MULTISTRAPCONF"
-
-# backup ldconfig and ldd
-echo "I: backup ldconfig and ldd"
-mv $ROOTDIR/sbin/ldconfig $ROOTDIR/sbin/ldconfig.REAL
-mv $ROOTDIR/usr/bin/ldd $ROOTDIR/usr/bin/ldd.REAL
 
 # copy initial directory tree - dereference symlinks
 echo "I: copy initial directory root tree $BOARD/root/ to $ROOTDIR/"
@@ -152,9 +145,6 @@ fi
 
 #cleanup
 echo "I: cleanup"
-rm $ROOTDIR/sbin/ldconfig $ROOTDIR/usr/bin/ldd
-mv $ROOTDIR/sbin/ldconfig.REAL $ROOTDIR/sbin/ldconfig
-mv $ROOTDIR/usr/bin/ldd.REAL $ROOTDIR/usr/bin/ldd
 rm $ROOTDIR/usr/sbin/policy-rc.d
 
 # need to generate tar inside fakechroot so that absolute symlinks are correct
