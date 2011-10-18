@@ -10,7 +10,7 @@ allowrecommends=false
 addimportant=false
 
 [Debian_bootstrap]
-packages=$PACKAGES
+packages=debian-ports-archive-keyring $PACKAGES
 source=$MIRROR
 suite=$SUITE
 omitdebsrc=true
