@@ -43,10 +43,10 @@ omitdebsrc=true
 -%<----------------------------
 
 You can also avoid all this trouble by either waiting for #632192 to be fixed
-or by applying the patch from there to qemu and using the newly introduced
-environment variable QEMU_LD_PREFIX like so:
+or by applying the patch from there to qemu.
 
-QEMU_LD_PREFIX=/tmp/debian-sid/ ./polystrap.sh -d /tmp/debian-sid/ om-gta02
+Since support for QEMU_LD_PREFIX has now been added upstream it is now already
+part of polystrap.sh
 
 
 FAKEROOT/FAKECHROOT
@@ -56,13 +56,19 @@ Additionally you will need to have copies of libfakechroot.so and
 libfakeroot-sysv.so for your target architecture in /usr/lib/<arch-triplet>/.
 Get the debian packages of fakeroot and fakechroot for your target architecture
 and copy the shared libraries into /usr/lib/<arch-triplet>/. For example for
-arm do:
+armel do:
 
-wget http://ftp.debian.org/debian/pool/main/f/fakechroot/fakechroot_2.14-1_armel.deb
-wget http://ftp.debian.org/debian/pool/main/f/fakeroot/fakeroot_1.14.5-1_armel.deb
 sudo mkdir -p /usr/lib/arm-linux-gnueabi/
+wget http://ftp.debian.org/debian/pool/main/f/fakeroot/fakeroot_1.18.1-1_armel.deb
 dpkg-deb --fsys-tarfile fakeroot_1.14.5-1_armel.deb | sudo tar -xf - --strip-components=4 -C /usr/lib/arm-linux-gnueabi/ ./usr/lib/libfakeroot/libfakeroot-sysv.so
-dpkg-deb --fsys-tarfile fakechroot_2.14-1_armel.deb | sudo tar -xf - --strip-components=4 -C /usr/lib/arm-linux-gnueabi/ ./usr/lib/fakechroot/libfakechroot.so
+wget http://ftp.debian.org/debian/pool/main/f/fakechroot/libfakechroot_2.15-1_armel.deb
+dpkg -x libfakechroot_2.15-1_armel.deb /
+
+Alternatively, since libfakechroot is multiarch you can also do:
+
+apt-get install libfakechroot:armel
+
+if your system supports it instead of the last two lines.
 
 
 INNER WORKINGS

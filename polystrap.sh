@@ -84,6 +84,8 @@ fi
 # binutils must always be installed for objdump for fake ldd
 PACKAGES="$PACKAGES binutils"
 
+export QEMU_LD_PREFIX="`readlink -m "$ROOTDIR"`"
+
 echo "I: --------------------------"
 echo "I: suite:   $SUITE"
 echo "I: arch:    $ARCH"
