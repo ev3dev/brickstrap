@@ -1,4 +1,4 @@
 SUITE="sid"
-ARCH="armel"
+ARCH="armhf"
 ROOTDIR="debian-$SUITE-$ARCH-`date +%F`"
-MIRROR="http://cdn.debian.net/debian"
+MIRROR="http://ftp.debian-ports.org/debian"
