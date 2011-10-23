@@ -1,0 +1,23 @@
+locales	locales/locales_to_be_generated	multiselect	en_US.UTF-8 UTF-8
+locales	locales/default_environment_locale	select	en_US.UTF-8
+tzdata	tzdata/Zones/Australia	select	
+tzdata	tzdata/Zones/US	select	
+tzdata	tzdata/Zones/Asia	select	
+tzdata	tzdata/Zones/Etc	select	UTC
+tzdata	tzdata/Zones/SystemV	select	
+tzdata	tzdata/Zones/Arctic	select	
+tzdata	tzdata/Zones/Pacific	select	
+tzdata	tzdata/Zones/Antarctica	select	
+tzdata	tzdata/Zones/Europe	select	Berlin
+tzdata	tzdata/Zones/Africa	select	
+tzdata	tzdata/Zones/America	select	
+tzdata	tzdata/Areas	select	Europe
+tzdata	tzdata/Zones/Atlantic	select	
+tzdata	tzdata/Zones/Indian	select	
+nodm	nodm/xinit	string	/usr/bin/xinit
+nodm	nodm/min_session_time	string	60
+nodm	nodm/enabled	boolean	true
+nodm	nodm/xsession	string	/etc/X11/Xsession
+nodm	nodm/x_options	string	vt7 -nolisten tcp
+nodm	nodm/first_vt	string	7
+nodm	nodm/user	string	user

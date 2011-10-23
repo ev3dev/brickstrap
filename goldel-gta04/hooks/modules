@@ -1,0 +1,1 @@
+curl --silent http://mister-muffin.de/gta04/modules.tgz | tar -xz -C $ROOTDIR
