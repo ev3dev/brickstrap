@@ -26,7 +26,7 @@
 set -e
 
 usage() {
-	echo "Usage: $0: [-n] [-s suite] [-a arch] [-d directory] [-m mirror] [-p packages] platform\n" >&2
+	echo "Usage: $0: [-f] [-v] [-n] [-s suite] [-a arch] [-d directory] [-m mirror] [-p packages] platform\n" >&2
 }
 
 export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true LC_ALL=C LANGUAGE=C LANG=C
@@ -38,8 +38,9 @@ if [ "$FAKEROOTKEY" = "" ]; then
 	exit
 fi
 
+FORCE=""
 MSTRAP_SIM=
-while getopts s:a:d:m:p:n opt; do
+while getopts fvs:a:d:m:p:n opt; do
 	case $opt in
 	s) _SUITE="$OPTARG";;
 	a) _ARCH="$OPTARG";;
@@ -47,6 +48,8 @@ while getopts s:a:d:m:p:n opt; do
 	m) _MIRROR="$OPTARG";;
 	p) _PACKAGES="$OPTARG";;
 	n) MSTRAP_SIM="--simulate";;
+	v) set -x;;
+	f) FORCE=true;;
 	?) usage; exit 1;;
 	esac
 done
@@ -92,8 +95,17 @@ echo "I: mirror:  $MIRROR"
 echo "I: pkgs:    $PACKAGES"
 echo "I: --------------------------"
 
-[ -e "$ROOTDIR.tar" ] && { echo "tarball $ROOTDIR.tar still exists" >&2; exit 1; }
-[ -e "$ROOTDIR" ] && { echo "root directory $ROOTDIR still exists" >&2; exit 1; }
+[ -e "$ROOTDIR.tar" ] && [ ! "$FORCE" = true ] && { echo "tarball $ROOTDIR.tar still exists" >&2; exit 1; }
+
+# if rootdir exists, either warn and abort or delete and continue
+if [ -e "$ROOTDIR" ]; then
+	if [ "$FORCE" = true ]; then
+		rm -rf $ROOTDIR
+	else
+		echo "root directory $ROOTDIR still exists" >&2
+		exit 1
+	fi
+fi
 
 # create multistrap.conf
 echo "I: create multistrap.conf"
@@ -126,8 +138,12 @@ fi
 
 # run preinst scripts
 for script in $ROOTDIR/var/lib/dpkg/info/*.preinst; do
-	[ "$script" = "$ROOTDIR/var/lib/dpkg/info/bash.preinst" ] && continue
+	#[ "$script" = "$ROOTDIR/var/lib/dpkg/info/bash.preinst" ] && continue
+	#[ "$script" = "$ROOTDIR/var/lib/dpkg/info/module-init-tools.preinst" ] && continue
+	[ "$script" = "$ROOTDIR/var/lib/dpkg/info/vpnc.preinst" ] && continue
 	echo "I: run preinst script ${script##$ROOTDIR}"
+	DPKG_MAINTSCRIPT_NAME=preinst \
+	DPKG_MAINTSCRIPT_PACKAGE="`basename $script .preinst`" \
 	fakechroot chroot $ROOTDIR ${script##$ROOTDIR} install
 done
 
