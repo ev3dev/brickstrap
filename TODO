@@ -1,5 +1,6 @@
  * create debian package
  * resolve fakechroot bug #611156
- * add qemu-user-static elf interpreter prefix environment variable bug #632192 (is fixed upstream)
  * make qemu-user not trap itself in cyclic symlinks bug #636035
- * make fakeroot multiarch #636192
+ * if gconf2 is to be installed bug #636083
+ * have libfakeroot-sysv.so not in the libfakeroot subdirectory (no idea why
+   the linker doesnt find it otherwise - it works for fakechroot.so in subdir)
