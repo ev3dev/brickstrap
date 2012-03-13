@@ -6,6 +6,9 @@ mode emulation from the qemu-user package.
 QEMU USER MODE
 ==============
 
+qemu >= 1.0 is required for this to work out of the box. For older qemu
+versions, the (now outdated) instructions in the rest of this section:
+
 To make qemu user mode emulation work you need to install the packages
 qemu-user and binfmt-support. Until bug #632192 is fixed you will have to
 provide properly filled /etc/qemu-binfmt/$arch/ directories. $arch is a qemu
@@ -122,6 +125,8 @@ options:
 	-a arch
 	-d rootdir
 	-m mirror
+	-v verbose (set -x)
+	-f force (overwrite existing directories)
 
 Additionally the following option allows to specify a list of packages that is
 then used instead of the contents of the BOARD/packages directory:
@@ -149,7 +154,3 @@ When creating a directory for a new target one can either just copy the defaut
 directory or use the ./newtarget.sh script which will use symlinks where it
 makes sense, will not copy the whole package selection and will set hostname
 according to the target name.
-
-Example config and multistrap.conf for usage of armhf is given in the default
-directory as config.armhf and multistrap.conf.armhf. Some fakechroot bugs
-(#611156) is unfortunately blocking this functionality right now.
