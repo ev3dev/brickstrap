@@ -23,8 +23,6 @@
 # FROM,OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-set -e
-
 usage() {
 	echo "Usage: $0: [-f] [-v] [-n] [-s suite] [-a arch] [-d directory] [-m mirror] [-p packages] platform\n" >&2
 }
@@ -40,7 +38,8 @@ fi
 
 FORCE=""
 MSTRAP_SIM=
-while getopts fvs:a:d:m:p:n opt; do
+EXIT_ON_ERROR=true
+while getopts efvs:a:d:m:p:n opt; do
 	case $opt in
 	s) _SUITE="$OPTARG";;
 	a) _ARCH="$OPTARG";;
@@ -48,6 +47,7 @@ while getopts fvs:a:d:m:p:n opt; do
 	m) _MIRROR="$OPTARG";;
 	p) _PACKAGES="$OPTARG";;
 	n) MSTRAP_SIM="--simulate";;
+	e) EXIT_ON_ERROR=false;;
 	v) set -x;;
 	f) FORCE=true;;
 	?) usage; exit 1;;
@@ -56,6 +56,8 @@ done
 shift $(($OPTIND - 1))
 
 [ "$#" -ne 1 ] && { echo "too many positional arguments" >&2; usage; exit 1; }
+
+[ "$EXIT_ON_ERROR" = true ] && set -e
 
 BOARD="$1"
 
@@ -148,8 +150,6 @@ fi
 
 # run preinst scripts
 for script in $ROOTDIR/var/lib/dpkg/info/*.preinst; do
-	#[ "$script" = "$ROOTDIR/var/lib/dpkg/info/bash.preinst" ] && continue
-	#[ "$script" = "$ROOTDIR/var/lib/dpkg/info/module-init-tools.preinst" ] && continue
 	[ "$script" = "$ROOTDIR/var/lib/dpkg/info/vpnc.preinst" ] && continue
 	echo "I: run preinst script ${script##$ROOTDIR}"
 	DPKG_MAINTSCRIPT_NAME=preinst \
