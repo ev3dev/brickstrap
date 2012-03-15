@@ -122,6 +122,16 @@ multistrap $MSTRAP_SIM -f "$MULTISTRAPCONF"
 
 rm -f "$MULTISTRAPCONF"
 
+# convert absolute symlinks for fakechroot
+for link in `find $ROOTDIR -type l`; do
+        target=`readlink $link`
+        if [ "${target%%/*}" = "" ]; then # target begins with slash
+		echo "I: convert symlink: ${link#$ROOTDIR} -> $target"
+		rm $link
+                ln -s $ROOTDIR/$target $link
+        fi
+done
+
 # copy initial directory tree - dereference symlinks
 echo "I: copy initial directory root tree $BOARD/root/ to $ROOTDIR/"
 if [ -r "$BOARD/root" ]; then
