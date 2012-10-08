@@ -73,7 +73,7 @@ BOARD="$1"
 # overwrite target options by commandline options
 SUITE=${_SUITE:-$SUITE}
 ARCH=${_ARCH:-$ARCH}
-ROOTDIR=${_ROOTDIR:-$ROOTDIR}
+ROOTDIR=$(readlink -m ${_ROOTDIR:-$ROOTDIR})
 MIRROR=${_MIRROR:-$MIRROR}
 
 if [ "$_PACKAGES" = "" ] && [ -r "$BOARD/packages" ]; then
@@ -130,7 +130,7 @@ for link in `find $ROOTDIR -type l`; do
         if [ "${target%%/*}" = "" ]; then # target begins with slash
 		echo "I: convert symlink: ${link#$ROOTDIR} -> $target"
 		rm $link
-                ln -s $ROOTDIR/$target $link
+                ln -s ${ROOTDIR}$target $link
         fi
 done
 
@@ -175,6 +175,7 @@ rm $ROOTDIR/usr/sbin/policy-rc.d
 
 # need to generate tar inside fakechroot so that absolute symlinks are correct
 # tar is clever enough to not try and put the archive inside itself
-echo "I: create tarball $ROOTDIR.tar"
-fakechroot chroot $ROOTDIR tar -cf $ROOTDIR.tar -C / .
-mv $ROOTDIR/$ROOTDIR.tar .
+TARBALL=$(basename $ROOTDIR).tar
+echo "I: create tarball $TARBALL"
+fakechroot chroot $ROOTDIR tar -cf $TARBALL -C / .
+mv $ROOTDIR/$TARBALL .
