@@ -1,7 +1,7 @@
 #!/bin/sh
 #
-# polystrap - create a foreign architecture rootfs using multistrap, fakeroot,
-#             fakechroot and qemu usermode emulation
+# polystrap - create a foreign architecture rootfs using multistrap, proot,
+#             and qemu usermode emulation
 #
 # Copyright (C) 2011 by Johannes 'josch' Schauer <j.schauer@email.de>
 #
@@ -27,14 +27,17 @@ usage() {
 	echo "Usage: $0: [-f] [-v] [-n] [-s suite] [-a arch] [-d directory] [-m mirror] [-p packages] platform\n" >&2
 }
 
+CHROOTQEMUCMD="proot -q qemu-arm -v -1 -0 -b /dev -b /sys -b /proc"
+CHROOTCMD="proot -v -1 -0"
+
 export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true LC_ALL=C LANGUAGE=C LANG=C
 export PATH=$PATH:/usr/sbin:/sbin
 
-if [ "$FAKEROOTKEY" = "" ]; then
-	echo "I: re-executing script inside fakeroot"
-	fakeroot "$0" "$@";
-	exit
-fi
+#if [ "$FAKEROOTKEY" = "" ]; then
+#	echo "I: re-executing script inside fakeroot"
+#	fakeroot "$0" "$@";
+#	exit
+#fi
 
 FORCE=""
 MSTRAP_SIM=
@@ -87,7 +90,7 @@ else
 fi
 
 export QEMU_LD_PREFIX="`readlink -m "$ROOTDIR"`"
-export FAKECHROOT_CMD_SUBST=/usr/bin/ldd=/usr/bin/ldd.fakechroot:/sbin/ldconfig=/bin/true
+#export FAKECHROOT_CMD_SUBST=/usr/bin/ldd=/usr/bin/ldd.fakechroot:/sbin/ldconfig=/bin/true
 
 echo "I: --------------------------"
 echo "I: suite:   $SUITE"
@@ -119,20 +122,20 @@ done < $BOARD/multistrap.conf
 
 # download and extract packages
 echo "I: run multistrap" >&2
-multistrap $MSTRAP_SIM -f "$MULTISTRAPCONF"
+proot -0 multistrap $MSTRAP_SIM -f "$MULTISTRAPCONF"
 [ -z "$MSTRAP_SIM" ] || exit 0
 
 rm -f "$MULTISTRAPCONF"
 
-# convert absolute symlinks for fakechroot
-for link in `find $ROOTDIR -type l`; do
-        target=`readlink $link`
-        if [ "${target%%/*}" = "" ]; then # target begins with slash
-		echo "I: convert symlink: ${link#$ROOTDIR} -> $target"
-		rm $link
-                ln -s ${ROOTDIR}$target $link
-        fi
-done
+## convert absolute symlinks for fakechroot
+#for link in `find $ROOTDIR -type l`; do
+#        target=`readlink $link`
+#        if [ "${target%%/*}" = "" ]; then # target begins with slash
+#		echo "I: convert symlink: ${link#$ROOTDIR} -> $target"
+#		rm $link
+#                ln -s ${ROOTDIR}$target $link
+#        fi
+#done
 
 # copy initial directory tree - dereference symlinks
 echo "I: copy initial directory root tree $BOARD/root/ to $ROOTDIR/"
@@ -144,7 +147,7 @@ fi
 echo "I: preseed debconf"
 if [ -r "$BOARD/debconfseed.txt" ]; then
 	cp "$BOARD/debconfseed.txt" $ROOTDIR/tmp/
-	fakechroot chroot $ROOTDIR debconf-set-selections /tmp/debconfseed.txt
+	$CHROOTQEMUCMD $ROOTDIR debconf-set-selections /tmp/debconfseed.txt
 	rm $ROOTDIR/tmp/debconfseed.txt
 fi
 
@@ -154,12 +157,12 @@ for script in $ROOTDIR/var/lib/dpkg/info/*.preinst; do
 	echo "I: run preinst script ${script##$ROOTDIR}"
 	DPKG_MAINTSCRIPT_NAME=preinst \
 	DPKG_MAINTSCRIPT_PACKAGE="`basename $script .preinst`" \
-	fakechroot chroot $ROOTDIR ${script##$ROOTDIR} install
+	$CHROOTQEMUCMD $ROOTDIR ${script##$ROOTDIR} install
 done
 
 # run dpkg --configure -a twice because of errors during the first run
 echo "I: configure packages"
-fakechroot chroot $ROOTDIR /usr/bin/dpkg --configure -a || fakechroot chroot $ROOTDIR /usr/bin/dpkg --configure -a
+$CHROOTQEMUCMD $ROOTDIR /usr/bin/dpkg --configure -a || $CHROOTCMD $ROOTDIR /usr/bin/dpkg --configure -a
 
 # source hooks
 if [ -r "$BOARD/hooks" ]; then
@@ -175,7 +178,7 @@ rm $ROOTDIR/usr/sbin/policy-rc.d
 
 # need to generate tar inside fakechroot so that absolute symlinks are correct
 # tar is clever enough to not try and put the archive inside itself
-TARBALL=$(basename $ROOTDIR).tar
-echo "I: create tarball $TARBALL"
-fakechroot chroot $ROOTDIR tar -cf $TARBALL -C / .
-mv $ROOTDIR/$TARBALL .
+#TARBALL=$(basename $ROOTDIR).tar
+#echo "I: create tarball $TARBALL"
+#$CHROOTCMD $ROOTDIR tar -cf $TARBALL -C / .
+#mv $ROOTDIR/$TARBALL .
