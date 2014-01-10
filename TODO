@@ -4,3 +4,4 @@
  * if gconf2 is to be installed bug #636083
  * have libfakeroot-sysv.so not in the libfakeroot subdirectory (no idea why
    the linker doesnt find it otherwise - it works for fakechroot.so in subdir)
+ * initrd cannot be created
