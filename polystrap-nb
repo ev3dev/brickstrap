@@ -1,0 +1,58 @@
+#!/bin/sh -ex
+
+dir_depth() {
+	dir="$1"
+	while [ "$dir" != "." ] && [ "$dir" != "/" ]; do
+		dir=`dirname "$dir"`
+		echo -n ../
+	done
+}
+
+if [ "$#" -ne 1 ]; then
+	echo 1>&2 "you have to specify the new board name"
+	exit 1
+fi
+
+BOARD="$1"
+
+if [ -e "$BOARD" ]; then
+	echo 1>&2 "board already exists"
+	exit 1
+fi
+
+mkdir -p $BOARD/
+mkdir -p $BOARD/packages/
+mkdir -p $BOARD/root/etc/network/
+mkdir -p $BOARD/hooks/
+
+cp default/config $BOARD
+cp default/multistrap.conf $BOARD
+cp default/debconfseed.txt $BOARD
+
+for f in packages/base \
+         root/usr/sbin/policy-rc.d \
+         root/usr/bin/ldd \
+         root/etc/apt/apt.conf.d/99no-install-recommends \
+         root/etc/apt/apt.conf.d/99no-pdiffs \
+         root/etc/ld.so.conf \
+         root/etc/ssh/ssh_host_ecdsa_key \
+         root/etc/ssh/ssh_host_rsa_key \
+         root/etc/ssh/ssh_host_dsa_key \
+         root/sbin/ldconfig \
+         hooks/create_user \
+         hooks/serial_tty \
+         hooks/firstboot \
+         hooks/empty_password; do
+	mkdir -p `dirname $BOARD/$f`
+	ln -s `dir_depth $f`default/$f $BOARD/$f
+done
+
+cat << __END__ > $BOARD/root/etc/hosts
+127.0.0.1 localhost
+127.0.0.1 $BOARD
+__END__
+
+echo $BOARD > $BOARD/root/etc/hostname
+
+cp default/root/etc/fstab $BOARD/root/etc/
+cp default/root/etc/network/interfaces $BOARD/root/etc/network/

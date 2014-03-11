@@ -1,4 +1,0 @@
-SUITE="sid"
-ARCH="armhf"
-ROOTDIR="debian-$DIST-$ARCH"
-MIRROR="http://ftp.debian-ports.org/debian"

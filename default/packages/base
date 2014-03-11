@@ -1,5 +1,5 @@
 udev
-module-init-tools
+kmod
 apt
 locales
 procps

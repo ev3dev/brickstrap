@@ -6,6 +6,9 @@ mode emulation from the qemu-user package.
 QEMU USER MODE
 ==============
 
+qemu >= 1.0 is required for this to work out of the box. For older qemu
+versions, the (now outdated) instructions in the rest of this section:
+
 To make qemu user mode emulation work you need to install the packages
 qemu-user and binfmt-support. Until bug #632192 is fixed you will have to
 provide properly filled /etc/qemu-binfmt/$arch/ directories. $arch is a qemu
@@ -43,10 +46,10 @@ omitdebsrc=true
 -%<----------------------------
 
 You can also avoid all this trouble by either waiting for #632192 to be fixed
-or by applying the patch from there to qemu and using the newly introduced
-environment variable QEMU_LD_PREFIX like so:
+or by applying the patch from there to qemu.
 
-QEMU_LD_PREFIX=/tmp/debian-sid/ ./polystrap.sh -d /tmp/debian-sid/ om-gta02
+Since support for QEMU_LD_PREFIX has now been added upstream it is now already
+part of polystrap.sh
 
 
 FAKEROOT/FAKECHROOT
@@ -56,13 +59,19 @@ Additionally you will need to have copies of libfakechroot.so and
 libfakeroot-sysv.so for your target architecture in /usr/lib/<arch-triplet>/.
 Get the debian packages of fakeroot and fakechroot for your target architecture
 and copy the shared libraries into /usr/lib/<arch-triplet>/. For example for
-arm do:
+armel do:
 
-wget http://ftp.debian.org/debian/pool/main/f/fakechroot/fakechroot_2.14-1_armel.deb
-wget http://ftp.debian.org/debian/pool/main/f/fakeroot/fakeroot_1.14.5-1_armel.deb
 sudo mkdir -p /usr/lib/arm-linux-gnueabi/
+wget http://ftp.debian.org/debian/pool/main/f/fakeroot/fakeroot_1.18.1-1_armel.deb
 dpkg-deb --fsys-tarfile fakeroot_1.14.5-1_armel.deb | sudo tar -xf - --strip-components=4 -C /usr/lib/arm-linux-gnueabi/ ./usr/lib/libfakeroot/libfakeroot-sysv.so
-dpkg-deb --fsys-tarfile fakechroot_2.14-1_armel.deb | sudo tar -xf - --strip-components=4 -C /usr/lib/arm-linux-gnueabi/ ./usr/lib/fakechroot/libfakechroot.so
+wget http://ftp.debian.org/debian/pool/main/f/fakechroot/libfakechroot_2.15-1_armel.deb
+dpkg -x libfakechroot_2.15-1_armel.deb /
+
+Alternatively, since libfakechroot is multiarch you can also do:
+
+apt-get install libfakechroot:armel
+
+if your system supports it instead of the last two lines.
 
 
 INNER WORKINGS
@@ -79,14 +88,14 @@ and I have no intention to make it much more complex.
 
 Polystrap is invoked as such:
 
-	./polystrap.sh PLATFORM
+	./polystrap.sh BOARD
 
-PLATFORM is a directory that at least contains a multistrap.conf. The
+BOARD is a directory that at least contains a multistrap.conf. The
 multistrap.conf may contain variables from polystrap.sh.
 
-In the normal case PLATFORM will contain some additional bits.
+In the normal case BOARD will contain some additional bits.
 
-	PLATFORM/config - A file that is sourced by ./polystrap.sh and
+	BOARD/config - A file that is sourced by ./polystrap.sh and
 	                  contains variable declarations like:
 	                      SUITE   - stable, testing, unstable
 	                      ARCH    - armel, armhf, amd64, i386
@@ -98,27 +107,29 @@ In the normal case PLATFORM will contain some additional bits.
 	                  Correct settings for ARCH and ROOTDIR are necessary
 	                  for proper operation, whereas other parameters are
 	                  only used if your multistrap.conf references them.
-	PLATFORM/debconfseed.txt - as the name suggests
-	PLATFORM/hooks  - A directory that contains files that are sourced by
+	BOARD/debconfseed.txt - as the name suggests
+	BOARD/hooks  - A directory that contains files that are sourced by
 	                  polystrap after packages are installed.
-	PLATFORM/packages - Contains files with one debian package per line.
+	BOARD/packages - Contains files with one debian package per line.
 	                    Grouping packages by that allows easier selection.
-	PLATFORM/root   - Contains a rootfs tree that is copied to the target
+	BOARD/root   - Contains a rootfs tree that is copied to the target
 	                  directory after packages are unpacked by multistrap.
 
 Reasonable examples of how those pieces look like can be found in the defaults
 directory.
 
-Everything from the PLATFORM/config file can be overwritten by commandline
+Everything from the BOARD/config file can be overwritten by commandline
 options:
 
 	-s suite
 	-a arch
 	-d rootdir
 	-m mirror
+	-v verbose (set -x)
+	-f force (overwrite existing directories)
 
 Additionally the following option allows to specify a list of packages that is
-then used instead of the contents of the PLATFORM/packages directory:
+then used instead of the contents of the BOARD/packages directory:
 
 	-p packages
 
@@ -126,16 +137,16 @@ How the script works:
 
  *) re-execute itself in fakeroot
  *) source default/config
- *) source PLATFORM/config
- *) determine package selection by PLATFORM/packages or commandline argument
- *) create multistrap.conf in /tmp from PLATFORM/multistrap.conf
+ *) source BOARD/config
+ *) determine package selection by BOARD/packages or commandline argument
+ *) create multistrap.conf in /tmp from BOARD/multistrap.conf
  *) run multistrap
- *) copy contents of PLATFORM/root
+ *) copy contents of BOARD/root
  *) copy qemu usermode binary
  *) set debconf selections
  *) run preinst scripts
  *) configure packages
- *) source PLATFORM/hooks
+ *) source BOARD/hooks
  *) cleanup
  *) generate tarball
 
@@ -143,7 +154,3 @@ When creating a directory for a new target one can either just copy the defaut
 directory or use the ./newtarget.sh script which will use symlinks where it
 makes sense, will not copy the whole package selection and will set hostname
 according to the target name.
-
-Example config and multistrap.conf for usage of armhf is given in the default
-directory as config.armhf and multistrap.conf.armhf. Some fakechroot bugs
-(#611156) is unfortunately blocking this functionality right now.
