@@ -33,12 +33,6 @@ CHROOTCMD="proot -v -1 -0"
 export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true LC_ALL=C LANGUAGE=C LANG=C
 export PATH=$PATH:/usr/sbin:/sbin
 
-#if [ "$FAKEROOTKEY" = "" ]; then
-#	echo "I: re-executing script inside fakeroot"
-#	fakeroot "$0" "$@";
-#	exit
-#fi
-
 FORCE=""
 MSTRAP_SIM=
 EXIT_ON_ERROR=true
@@ -89,9 +83,6 @@ else
 	PACKAGES="$_PACKAGES"
 fi
 
-export QEMU_LD_PREFIX="`readlink -m "$ROOTDIR"`"
-#export FAKECHROOT_CMD_SUBST=/usr/bin/ldd=/usr/bin/ldd.fakechroot:/sbin/ldconfig=/bin/true
-
 echo "I: --------------------------"
 echo "I: suite:   $SUITE"
 echo "I: arch:    $ARCH"
@@ -112,13 +103,29 @@ if [ -e "$ROOTDIR" ]; then
 	fi
 fi
 
+multistrapconf_aptpreferences=false
+multistrapconf_cleanup=false;
+
 # create multistrap.conf
 echo "I: create multistrap.conf"
 MULTISTRAPCONF=`tempfile -d . -p multistrap`
 echo -n > "$MULTISTRAPCONF"
 while read line; do
 	eval echo $line >> "$MULTISTRAPCONF"
+	if echo $line | grep -E -q "^aptpreferences="
+	then
+		multistrapconf_aptpreferences=true
+	fi
+	if echo $line | grep -E -q "^cleanup=true"
+	then
+		multistrapconf_cleanup=true
+	fi
 done < $BOARD/multistrap.conf
+
+if [ "$multistrapconf_aptpreferences" = "true" ] && [ "$multistrapconf_cleanup" == "true" ]
+then
+	echo "W: aptpreferences= option with cleanup=true - apt pinning will not take effect."
+fi
 
 # download and extract packages
 echo "I: run multistrap" >&2
@@ -127,20 +134,17 @@ proot -0 multistrap $MSTRAP_SIM -f "$MULTISTRAPCONF"
 
 rm -f "$MULTISTRAPCONF"
 
-## convert absolute symlinks for fakechroot
-#for link in `find $ROOTDIR -type l`; do
-#        target=`readlink $link`
-#        if [ "${target%%/*}" = "" ]; then # target begins with slash
-#		echo "I: convert symlink: ${link#$ROOTDIR} -> $target"
-#		rm $link
-#                ln -s ${ROOTDIR}$target $link
-#        fi
-#done
-
 # copy initial directory tree - dereference symlinks
 echo "I: copy initial directory root tree $BOARD/root/ to $ROOTDIR/"
 if [ -r "$BOARD/root" ]; then
 	cp --recursive --dereference $BOARD/root/* $ROOTDIR/
+fi
+
+# call apt-get upgrade so that pinning rules in aptpreferences will take effect
+if [ "$multistrapconf_aptpreferences" = "true" ]
+then
+	echo "I: Running apt-get upgrade to ensure aptpreferences"
+	$CHROOTQEMUCMD $ROOTDIR apt-get upgrade --yes --force-yes --download-only
 fi
 
 # preseed debconf
@@ -175,10 +179,3 @@ fi
 #cleanup
 echo "I: cleanup"
 rm $ROOTDIR/usr/sbin/policy-rc.d
-
-# need to generate tar inside fakechroot so that absolute symlinks are correct
-# tar is clever enough to not try and put the archive inside itself
-#TARBALL=$(basename $ROOTDIR).tar
-#echo "I: create tarball $TARBALL"
-#$CHROOTCMD $ROOTDIR tar -cf $TARBALL -C / .
-#mv $ROOTDIR/$TARBALL .

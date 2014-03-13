@@ -1,0 +1,13 @@
+# Prefer packages from ev3dev over other origins. This way if Debian releases
+# a newer version of a package that we have modifed, the new Debian version
+# will not be installed (because it will probably break something).
+Package: *
+Pin: release o=ev3dev
+Pin-Priority: 1001
+
+# NOTE: Pinning only takes effect AFTER a package has been installed. In other
+# words, this only affect upgrades. This means that ev3dev package versions will
+# NOT be preferred when installing them initally. To work around this, you must
+# manually specify the package version when installing (e.g. apt-get install
+# <package-name>=<version>) or run apt-get upgrade after apt-get install.
+

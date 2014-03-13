@@ -1,5 +1,6 @@
 Source: polystrap
-Maintainer: Johannes Schauer <j.schauer@email.de>
+Maintainer: David Lechner <david@lechnology.com>
+XSBC-Original-Maintainer: Johannes Schauer <j.schauer@email.de>
 Section: misc
 Priority: optional
 Standards-Version: 3.9.2
@@ -7,8 +8,7 @@ Build-Depends: debhelper (>=8.0.0)
 
 Package: polystrap
 Architecture: all
-Depends: ${misc:Depends}
+Depends: qemu-user (>= 1.0), multistrap, proot, ${misc:Depends}
 Description: multistrap wrapper to build foreign rootfs
  This package allows one to build a foreign debian rootfs using qemu user mode
- emulation, multistrap, fakeroot and fakechroot without the need of superuser
- priviliges.
+ emulation, multistrap and proot without the need of superuser priviliges.

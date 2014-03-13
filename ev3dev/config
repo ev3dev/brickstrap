@@ -1,0 +1,4 @@
+SUITE="stable"
+ARCH="armel"
+ROOTDIR="ev3dev-$SUITE-`date +%F`"
+MIRROR="http://ftp.debian.org/debian"

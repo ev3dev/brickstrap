@@ -1,0 +1,10 @@
+netbase
+net-tools
+ethtool
+iproute
+iputils-ping
+ifupdown
+isc-dhcp-client
+ssh
+wpasupplicant
+udhcpd

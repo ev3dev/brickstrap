@@ -1,3 +1,45 @@
+polystrap (0.1ubuntu1~1.gbpbea239) UNRELEASED; urgency=low
+
+  ** SNAPSHOT build @bea239b7a95175fa49cf5cb157ce950086f5e083 **
+
+  [ Geert Stappers ]
+  * s/PLATFORM/BOARD/
+  * renamed: newtarget.sh -> polystrap-nb
+  * polystrap-nb: error messages reviewed
+  * fakechroot multiarch BR
+
+  [ josch ]
+  * om-gta02: remove tslib hack
+  * default: fix config.armhf ROOTDIR name
+  * #562887 was fixed (qemu mips/mipsel issue)
+  * add a new qemu bug as TODO
+  * new TODO gconf bug
+  * add fakeroot multiarch bugnumber
+  * fakechroot is now multiarch
+  * add hint about existing root directory
+  * QEMU_LD_PREFIX support is upstream in qemu git
+  * add hint about existing tarball
+  * use FAKECHROOT_CMD_SUBST instead of backing up and replacing files in chroot
+  * add debian-ports-archive-keyring package to packages
+  * make notioninkadam target armhf by default
+  * add gta04 support
+  * enter proper aptsources independent on mirror used at build time
+  * rather use 2.6.34 for om-gta02
+  * add options for force and verbose
+  * armhf is now in the main archives
+  * update TODO
+  * update README
+  * accomodate for absolute symbolic link handling of fakechroot
+  * module-init-tools is dead - use kmod instead
+  * add new option to ignore errors during processing
+
+  [ Gilles Filippini ]
+  * Fix chroot internal symlinks path
+
+  [ David Lechner ]
+
+ -- Geert Stappers <stappers@stappers.nl>  Mon, 10 Mar 2014 20:01:41 -0500
+
 polystrap (0.1) unstable; urgency=low
 
   * Initial release. (Closes: #XXXXXX)

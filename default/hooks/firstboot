@@ -21,4 +21,4 @@ ssh-keygen -q -t ecdsa -f /etc/ssh/ssh_host_ecdsa_key -C "" -N ""
 __END__
 
 chmod +x $ROOTDIR/etc/init.d/firstboot
-fakechroot chroot $ROOTDIR update-rc.d firstboot start 99 S
+$CHROOTQEMUCMD $ROOTDIR update-rc.d firstboot start 99 S

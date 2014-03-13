@@ -1,0 +1,3 @@
+deb http://ftp.debian.org/debian stable main contrib non-free
+
+deb http://ppa.lechnology.com/ev3dev stable main
