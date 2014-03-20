@@ -4,6 +4,7 @@
 #             and qemu usermode emulation
 #
 # Copyright (C) 2011 by Johannes 'josch' Schauer <j.schauer@email.de>
+# Copyright (C) 2014 by David Lechner <david@lechnology.com>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -24,19 +25,22 @@
 # IN THE SOFTWARE.
 
 usage() {
-	echo "Usage: $0: [-f] [-v] [-n] [-s suite] [-a arch] [-d directory] [-m mirror] [-p packages] platform\n" >&2
+	echo "Usage: $0: [-e] [-f] [-v] [-n] [-s suite] [-a arch] [-d directory] [-m mirror] [-p packages] platform\n" >&2
 }
 
-CHROOTQEMUCMD="proot -q qemu-arm -v -1 -0 -b /dev -b /sys -b /proc"
+SCRIPT_PATH=$(dirname $(readlink -f "$0"))
+
+CHROOTQEMUCMD="proot -q qemu-arm -v -1 -0"
+CHROOTQEMUBINDCMD=$CHROOTQEMUCMD" -b /dev -b /sys -b /proc"
 CHROOTCMD="proot -v -1 -0"
 
 export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true LC_ALL=C LANGUAGE=C LANG=C
-export PATH=$PATH:/usr/sbin:/sbin
+export PATH=$PATH:/usr/local/sbin:/usr/sbin:/sbin
 
 FORCE=""
 MSTRAP_SIM=
 EXIT_ON_ERROR=true
-while getopts efvs:a:d:m:p:n opt; do
+while getopts efvns:a:d:m:p: opt; do
 	case $opt in
 	s) _SUITE="$OPTARG";;
 	a) _ARCH="$OPTARG";;
@@ -58,11 +62,12 @@ shift $(($OPTIND - 1))
 
 BOARD="$1"
 
+[ ! -r "$BOARD" ] && BOARD="$SCRIPT_PATH/$BOARD"
 [ ! -r "$BOARD" ] && { echo "cannot find target directory: $BOARD" >&2; exit 1; }
 [ ! -r "$BOARD/multistrap.conf" ] && { echo "cannot read multistrap config: $BOARD/multistrap.conf" >&2; exit 1; }
 
 # source default options
-. "default/config"
+. "$SCRIPT_PATH/default/config"
 
 # overwrite default options by target options
 [ -r "$BOARD/config" ] && . "$BOARD/config"
@@ -161,12 +166,12 @@ for script in $ROOTDIR/var/lib/dpkg/info/*.preinst; do
 	echo "I: run preinst script ${script##$ROOTDIR}"
 	DPKG_MAINTSCRIPT_NAME=preinst \
 	DPKG_MAINTSCRIPT_PACKAGE="`basename $script .preinst`" \
-	$CHROOTQEMUCMD $ROOTDIR ${script##$ROOTDIR} install
+	$CHROOTQEMUBINDCMD $ROOTDIR ${script##$ROOTDIR} install
 done
 
 # run dpkg --configure -a twice because of errors during the first run
 echo "I: configure packages"
-$CHROOTQEMUCMD $ROOTDIR /usr/bin/dpkg --configure -a || $CHROOTCMD $ROOTDIR /usr/bin/dpkg --configure -a
+$CHROOTQEMUBINDCMD $ROOTDIR /usr/bin/dpkg --configure -a || $CHROOTQEMUBINDCMD $ROOTDIR /usr/bin/dpkg --configure -a || true
 
 # source hooks
 if [ -r "$BOARD/hooks" ]; then
@@ -179,3 +184,9 @@ fi
 #cleanup
 echo "I: cleanup"
 rm $ROOTDIR/usr/sbin/policy-rc.d
+
+# need to generate tar inside fakechroot so that absolute symlinks are correct
+TARBALL=$(pwd)/$(basename $ROOTDIR).tar.gz
+echo "I: create tarball $TARBALL"
+$CHROOTQEMUCMD $ROOTDIR tar -cpzf host-rootfs$TARBALL --exclude=host-rootfs /
+

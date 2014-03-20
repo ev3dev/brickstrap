@@ -1,0 +1,12 @@
+ethtool
+ifupdown
+iproute
+iputils-ping
+isc-dhcp-client
+netbase
+netcat-openbsd
+net-tools
+nfs-common
+ssh
+udhcpd
+wpasupplicant

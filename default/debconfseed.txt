@@ -21,3 +21,4 @@ nodm	nodm/xsession	string	/etc/X11/Xsession
 nodm	nodm/x_options	string	vt7 -nolisten tcp
 nodm	nodm/first_vt	string	7
 nodm	nodm/user	string	user
+beep	beep/suid_option	boolean	true

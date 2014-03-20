@@ -3,8 +3,10 @@ Maintainer: David Lechner <david@lechnology.com>
 XSBC-Original-Maintainer: Johannes Schauer <j.schauer@email.de>
 Section: misc
 Priority: optional
-Standards-Version: 3.9.2
+Standards-Version: 3.9.4
 Build-Depends: debhelper (>=8.0.0)
+VCS-Git: git://github.com/ev3dev-dpkg/polystrap.git
+VCS-Browser: https://github.com/ev3dev-dpkg/polystrap.git
 
 Package: polystrap
 Architecture: all

@@ -5,6 +5,10 @@ Files: debian/*
 Licence: GPL-3+
 Copyright 2011 Johannes Schauer <j.schauer@email.de>
 
+Files: ev3dev/*
+Licence: GPL-3+
+Copyright 2014 David Lechner <david@lechnology.com>
+
 Files: *
 Licence: GPL-3+
 Copyright 2011 Johannes Schauer <j.schauer@email.de>

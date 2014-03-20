@@ -1,0 +1,5 @@
+cat >> $ROOTDIR/etc/inittab << EOF
+
+# Uncomment the following line to enable login via input port 1 on the EV3
+#T0:2345:respawn:/sbin/getty -L ttyS1 115200 vt100
+EOF

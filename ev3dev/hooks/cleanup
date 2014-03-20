@@ -1,0 +1,2 @@
+$CHROOTQEMUCMD $ROOTDIR apt-get clean
+rm -f $ROOTDIR/usr/local/sbin/flash-kernel

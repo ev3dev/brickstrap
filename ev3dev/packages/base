@@ -1,17 +1,6 @@
-apt
-console-setup
-conspy
 ev3dev-base
-fbcat
-kmod
-less
 linux-image-ev3dev
 locales
 man-db
-nano
-procps
 plymouth
-sudo
 udev
-vim
-wget

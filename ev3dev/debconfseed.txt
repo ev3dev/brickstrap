@@ -13,4 +13,5 @@ tzdata	tzdata/Zones/Africa	select
 tzdata	tzdata/Zones/America	select	
 tzdata	tzdata/Areas		select
 tzdata	tzdata/Zones/Atlantic	select	
-tzdata	tzdata/Zones/Indian	select	
+tzdata	tzdata/Zones/Indian	select
+

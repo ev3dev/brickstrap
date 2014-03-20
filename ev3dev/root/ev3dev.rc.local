@@ -1,0 +1,32 @@
+echo "Running ev3dev.rc.local setup file!"
+
+# ---------------------------------------------------------------------------
+# Here is where you customize which device you want to use for connecting
+# to the host computer via USB
+
+# Uncomment this line for connecting to a Windows (works on Linux too)
+#export EV3_GADGET="g_ether"
+
+# Uncomment this line for connecting to a Mac OSX or Linux machine
+#export EV3_GADGET="g_cdc"
+
+if [ ! -z $EV3_GADGET ]; then
+    modprobe ${EV3_GADGET}
+
+    # workaround for bug in musb driver
+    modprobe -r ${EV3_GADGET}
+    modprobe ${EV3_GADGET}
+
+    echo "Sleeping for a couple of seconds to let things settle down..."
+
+    sleep 2
+
+    # If you change this IP address, be sure to change /etc/udhcpd.conf as well
+    ifconfig usb0 192.168.3.1
+
+    # You can disable this if you want to manually set the IP address on you
+    # host machine.
+    service udhcpd start
+fi
+
+# ---------------------------------------------------------------------------

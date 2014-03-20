@@ -1,6 +1,4 @@
-polystrap (0.1ubuntu1~1.gbpbea239) UNRELEASED; urgency=low
-
-  ** SNAPSHOT build @bea239b7a95175fa49cf5cb157ce950086f5e083 **
+polystrap (0.1ev3dev1) stable; urgency=low
 
   [ Geert Stappers ]
   * s/PLATFORM/BOARD/
@@ -38,7 +36,17 @@ polystrap (0.1ubuntu1~1.gbpbea239) UNRELEASED; urgency=low
 
   [ David Lechner ]
 
- -- Geert Stappers <stappers@stappers.nl>  Mon, 10 Mar 2014 20:01:41 -0500
+  [ josch ]
+  * remove firstbootscript first, then do rest
+  * do not set noauth=true
+  * update gta04 touchscreen config
+  * add TODO item
+  * add proot support
+
+  [ David Lechner ]
+  * add support for ev3dev (LEGO Mindstorms EV3)
+
+ -- David Lechner <david@lechnology.com>  Thu, 20 Mar 2014 14:07:49 -0500
 
 polystrap (0.1) unstable; urgency=low
 
