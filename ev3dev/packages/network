@@ -5,9 +5,9 @@ iputils-ping
 isc-dhcp-client
 netbase
 netcat-openbsd
+network-manager
 net-tools
 nfs-common
 rtl8188eu-modules
 ssh
-udhcpd
 wpasupplicant

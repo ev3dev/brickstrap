@@ -17,16 +17,8 @@ if [ ! -z $EV3_GADGET ]; then
     modprobe -r ${EV3_GADGET}
     modprobe ${EV3_GADGET}
 
-    echo "Sleeping for a couple of seconds to let things settle down..."
-
-    sleep 2
-
-    # If you change this IP address, be sure to change /etc/udhcpd.conf as well
-    ifconfig usb0 192.168.3.1
-
-    # You can disable this if you want to manually set the IP address on you
-    # host machine.
-    service udhcpd start
+    # Uncomment this line if you need to manually assign an IP address
+    #ifconfig usb0 192.168.3.1
 fi
 
 # ---------------------------------------------------------------------------
