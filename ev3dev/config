@@ -3,5 +3,5 @@ ARCH="armel"
 ROOTDIR="ev3dev-$SUITE-`date +%F`"
 MIRROR="http://ftp.debian.org/debian"
 if [ -z $EV3DEV_MIRROR ]; then
-	EV3DEV_MIRROR="http://ppa.lechnology.com/ev3dev"
+	EV3DEV_MIRROR="http://ev3dev.org/debian"
 fi
