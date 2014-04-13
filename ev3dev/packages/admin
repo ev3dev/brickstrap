@@ -1,7 +1,9 @@
 apt
 conspy
 kmod
+lvm2
 ntp
+parted
 procps
 sudo
 rsyslog

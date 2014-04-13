@@ -27,6 +27,24 @@ cat > /etc/modprobe.d/usb-net.conf << EOF
 options g_cdc dev_addr=\$dev_addr host_addr=\$host_addr
 options g_ether dev_addr=\$dev_addr host_addr=\$host_addr
 EOF
+
+# Create swap partition (and make room for growing lv0 in vg0)
+echo "Creating swap partition..."
+fdisk /dev/mmcblk0 | true << EOF
+n
+p
+3
+
+
+w
+EOF
+partprobe
+vgextend vg0 /dev/mmcblk0p3
+lvcreate --size 64M --name swap vg0
+mkswap /dev/mapper/vg0-swap
+swapon /dev/mapper/vg0-swap
+echo "/dev/mapper/vg0-swap none             swap   sw                                 0      0" >> /etc/fstab
+
 __END__
 
 chmod +x $ROOTDIR/etc/init.d/firstboot
