@@ -13,10 +13,6 @@ echo "Running ev3dev.rc.local setup file!"
 if [ ! -z $EV3_GADGET ]; then
     modprobe ${EV3_GADGET}
 
-    # workaround for bug in musb driver
-    modprobe -r ${EV3_GADGET}
-    modprobe ${EV3_GADGET}
-
     # Uncomment this line if you need to manually assign an IP address
     #ifconfig usb0 192.168.3.1
 fi
