@@ -1,11 +1,20 @@
-polystrap (0.1ev3dev3) saucy; urgency=low
+polystrap (0.1ev3dev4) stable; urgency=low
+
+  * add section to ev3dev firstboot for setting static MAC address for usb networking
+  * remove workaround since bug is fixed
+  * update for using network-manager package
+  * now using lvm - use ths to create swap partition
+
+ -- David Lechner <david@lechnology.com>  Sun, 13 Apr 2014 16:36:04 -0500
+
+polystrap (0.1ev3dev3) stable; urgency=low
 
   * fix kernel built with make-kpkg not working
   * remove unneeded files
 
  -- David Lechner <david@lechnology.com>  Tue, 08 Apr 2014 19:44:24 -0500
 
-polystrap (0.1ev3dev2) saucy; urgency=low
+polystrap (0.1ev3dev2) stable; urgency=low
 
   * add rtl8188eu kernel module
   * use netowrk-manager and drop udhcpd
