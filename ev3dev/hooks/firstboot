@@ -30,14 +30,12 @@ EOF
 
 # Create swap partition (and make room for growing lv0 in vg0)
 echo "Creating swap partition..."
-fdisk /dev/mmcblk0 | true << EOF
-n
+echo -n "n
 p
 3
 
 
-w
-EOF
+w" | fdisk /dev/mmcblk0 || true # fdisk returns error since we are doing this online
 partprobe
 vgextend vg0 /dev/mmcblk0p3
 lvcreate --size 64M --name swap vg0
