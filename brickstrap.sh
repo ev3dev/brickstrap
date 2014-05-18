@@ -129,7 +129,7 @@ while read line; do
 	fi
 done < $BOARD/multistrap.conf
 
-if [ "$multistrapconf_aptpreferences" = "true" ] && [ "$multistrapconf_cleanup" == "true" ]
+if [ "$multistrapconf_aptpreferences" = "true" ] && [ "$multistrapconf_cleanup" = "true" ]
 then
 	echo "W: aptpreferences= option with cleanup=true - apt pinning will not take effect."
 fi
