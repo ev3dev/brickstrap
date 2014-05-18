@@ -14,4 +14,4 @@ tzdata	tzdata/Zones/America	select
 tzdata	tzdata/Areas		select
 tzdata	tzdata/Zones/Atlantic	select	
 tzdata	tzdata/Zones/Indian	select
-
+beep	beep/suid_option	true
