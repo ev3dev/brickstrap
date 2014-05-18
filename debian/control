@@ -1,16 +1,15 @@
-Source: polystrap
+Source: brickstrap
 Maintainer: David Lechner <david@lechnology.com>
-XSBC-Original-Maintainer: Johannes Schauer <j.schauer@email.de>
 Section: misc
 Priority: optional
-Standards-Version: 3.9.4
+Standards-Version: 3.9.5
 Build-Depends: debhelper (>=8.0.0)
-VCS-Git: git://github.com/ev3dev-dpkg/polystrap.git
-VCS-Browser: https://github.com/ev3dev-dpkg/polystrap.git
+VCS-Git: git://github.com/ev3dev-dpkg/brickstrap.git
+VCS-Browser: https://github.com/ev3dev-dpkg/brickstrap.git
 
-Package: polystrap
+Package: brickstrap
 Architecture: all
-Depends: qemu-user (>= 1.0), multistrap, proot, ${misc:Depends}
-Description: multistrap wrapper to build foreign rootfs
+Depends: qemu-user (>= 1.0), multistrap, proot, libguestfs-tools, ${misc:Depends}
+Description: multistrap wrapper to build rootfs for ev3dev
  This package allows one to build a foreign debian rootfs using qemu user mode
  emulation, multistrap and proot without the need of superuser priviliges.

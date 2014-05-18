@@ -1,10 +1,12 @@
 #!/bin/sh
 #
-# polystrap - create a foreign architecture rootfs using multistrap, proot,
-#             and qemu usermode emulation
+# brickstrap - create a foreign architecture rootfs using multistrap, proot,
+#              and qemu usermode emulation
 #
-# Copyright (C) 2011 by Johannes 'josch' Schauer <j.schauer@email.de>
 # Copyright (C) 2014 by David Lechner <david@lechnology.com>
+#
+# Based on polystrap:
+# Copyright (C) 2011 by Johannes 'josch' Schauer <j.schauer@email.de>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal

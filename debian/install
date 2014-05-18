@@ -1,9 +1,4 @@
-polystrap.sh usr/share/polystrap/
-default usr/share/polystrap/
-ev3dev usr/share/polystrap/
-goldel-gta04 usr/share/polystrap/
-kirkwood usr/share/polystrap/
-notioninkadam usr/share/polystrap/
-om-gta02 usr/share/polystrap/
-touchbook usr/share/polystrap/
+brickstrap.sh usr/share/brickstrap/
+default usr/share/brickstrap/
+ev3dev usr/share/brickstrap/
 
