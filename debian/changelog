@@ -1,8 +1,14 @@
-brickstrap (0.2~1) UNRELEASED; urgency=medium
+brickstrap (0.2) trusty; urgency=medium
 
-  * change package name to brickstrap
+  * fix fdisk not working
+  * rename to brickstrap
+  * fix not building on trusty
+  * add beep suid to preseed
+  * merge in changes from @rhempel to make script runnable in parts
+  * rename volume group and logical volume
+  * add some more default packages
 
- -- David Lechner <david@ev3dev-trusty-on-mac>  Sat, 17 May 2014 21:19:17 -0500
+ -- David Lechner <david@lechnology.com>  Mon, 19 May 2014 12:39:23 -0500
 
 polystrap (0.1ev3dev4) stable; urgency=low
 
