@@ -1,6 +1,3 @@
-This package was downloaded from
-http://anonscm.debian.org/gitweb/?p=emdebian/polystrap.git
-
 Files: debian/*
 Licence: GPL-3+
 Copyright 2011 Johannes Schauer <j.schauer@email.de>
@@ -13,6 +10,11 @@ Files: *
 Licence: GPL-3+
 Copyright 2011 Johannes Schauer <j.schauer@email.de>
 
+Files: brickstrap.sh
+Copyright 2011 Johannes Schauer <j.schauer@email.de>
+Copyright 2013 Kevin van Zonneveld
+Copyright 2014 Ralph Hempel <rhempel@hempeldesigngroup.com>
+Copyright 2014 David Lechner <david@lechnology.com>
 License:
 
     This package is free software; you can redistribute it and/or modify

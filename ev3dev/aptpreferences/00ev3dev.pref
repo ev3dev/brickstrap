@@ -1,13 +1,36 @@
 # Prefer packages from ev3dev over other origins. This way if Debian releases
-# a newer version of a package that we have modifed, the new Debian version
+# a newer version of a package that we have modified, the new Debian version
 # will not be installed (because it will probably break something).
+#
+# NOTE: This pinning only takes effect AFTER a package has been installed. In
+# other words, this only affects upgrades. This means that ev3dev package
+# versions will NOT be preferred when installing them initially unless the
+# package itself is pinned with a lower priority
+
 Package: *
 Pin: release o=ev3dev
 Pin-Priority: 1001
 
-# NOTE: Pinning only takes effect AFTER a package has been installed. In other
-# words, this only affect upgrades. This means that ev3dev package versions will
-# NOT be preferred when installing them initally. To work around this, you must
-# manually specify the package version when installing (e.g. apt-get install
-# <package-name>=<version>) or run apt-get upgrade after apt-get install.
+# These are the packages in the ev3dev repository that have the same name as
+# official debian packages. These rules in conjunction with the rule above
+# cause the ev3dev version of the package to be preferred when installing.
 
+Package: base-files
+Pin: version 7.1wheezy4ev3dev1
+Pin-Priority: 999
+
+Package: espeak
+Pin: version 1.46.02-2ev3dev1
+Pin-Priority: 999
+
+Package: espeak-data
+Pin: version 1.46.02-2ev3dev1
+Pin-Priority: 999
+
+Package: libespeak1
+Pin: version 1.46.02-2ev3dev1
+Pin-Priority: 999
+
+Package: fbcat
+Pin: version 0.3-1ev3dev1
+Pin-Priority: 999

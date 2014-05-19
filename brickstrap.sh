@@ -1,194 +1,346 @@
-#!/bin/sh
+#!/bin/bash
 #
 # brickstrap - create a foreign architecture rootfs using multistrap, proot,
-#              and qemu usermode emulation
+#              and qemu usermode emulation and disk image using libguestfs
 #
-# Copyright (C) 2014 by David Lechner <david@lechnology.com>
+# Copyright (C) 2014 David Lechner <david@lechnology.com>
+# Copyright (C) 2014 Ralph Hempel <rhempel@hempeldesigngroup.com>
 #
 # Based on polystrap:
 # Copyright (C) 2011 by Johannes 'josch' Schauer <j.schauer@email.de>
 #
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
+# Template to write better bash scripts.
+# More info: http://kvz.io/blog/2013/02/26/introducing-bash3boilerplate/
+# Version 0.0.1
 #
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
+# Usage:
+#  LOG_LEVEL=4 ./template.sh first_arg second_arg
 #
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-# FROM,OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
-# IN THE SOFTWARE.
+# Licensed under MIT
+# Copyright (c) 2013 Kevin van Zonneveld
+# http://twitter.com/kvz
+#
 
-usage() {
-	echo "Usage: $0: [-e] [-f] [-v] [-n] [-s suite] [-a arch] [-d directory] [-m mirror] [-p packages] platform\n" >&2
+### Configuration
+#####################################################################
+
+# Environment variables
+[ -z "${LOG_LEVEL}" ] && LOG_LEVEL="3" # 4 = debug -> 0 = fail
+
+# Commandline options. This defines the usage page
+
+read -r -d '' usage <<-'EOF'
+  usage: brickstrap [-b <board>] [-d <dir>] <command>
+
+Options
+-------
+-b <board> Directory that contains board definition. (Default: ev3dev)
+-d <dir>   The name of the directory for the rootfs. Note: This is also
+           used for the .tar and .img file names.
+-f         Force overwriting existing files/directories.
+-h         Help. (You are looking at it.)
+
+  Commands
+  --------
+  create-conf          generates multistrap.conf
+* simulate-multistrap  runs multistrap with the --simulate option (for debuging)
+  run-multistrap       runs multistrap (creates rootfs and downloads packages)
+  copy-root            copies files from board definition folder to the rootfs
+  configure-packages   configures the packages in the rootfs
+  run-hooks            runs the hooks in the board configuration folder
+  create-tar           creates a tar file from the rootfs folder
+  create-image         creates a disk image file from the tar file
+
+* shell                runs a bash shell in the rootfs using qemu
+  all                  runs all of the above commands (except *) in order
+
+  Environment Variables
+  ---------------------
+  LOG_LEVEL     Specifies log level verbosity (0-4)
+                0=fail, ... 3=info(default), 4=debug
+
+  DEBIAN_MIRROR Specifies the debian mirror used by apt
+                default: http://ftp.debian.org/debian
+                (applies to create-conf only)
+
+  EV3DEV_MIRROR Specifies the ev3dev mirror used by apt
+                default: http://ev3dev.org/debian
+                (applies to create-conf only)
+EOF
+
+### Functions
+#####################################################################
+
+
+function _fmt () {
+  color_info="\x1b[32m"
+  color_warn="\x1b[33m"
+  color_error="\x1b[31m"
+
+  color=
+  [ "${1}" = "info" ] && color="${color_info}"
+  [ "${1}" = "warn" ] && color="${color_warn}"
+  [ "${1}" = "error" ] && color="${color_error}"
+  [ "${1}" = "fail" ] && color="${color_error}"
+
+  color_reset="\x1b[0m"
+  if [ "${TERM}" != "xterm" ] || [ -t 1 ]; then
+    # Don't use colors on pipes on non-recognized terminals
+    color=""
+    color_reset=""
+  fi
+  echo -e "$(date +"%H:%M:%S") [${color}$(printf "%5s" ${1})${color_reset}]";
 }
+
+function fail ()  {                             echo "$(_fmt fail) ${@}"  || true; exit 1; }
+function error () { [ "${LOG_LEVEL}" -ge 1 ] && echo "$(_fmt error) ${@}" || true;         }
+function warn ()  { [ "${LOG_LEVEL}" -ge 2 ] && echo "$(_fmt warn) ${@}"  || true;         }
+function info ()  { [ "${LOG_LEVEL}" -ge 3 ] && echo "$(_fmt info) ${@}"  || true;         }
+function debug () { [ "${LOG_LEVEL}" -ge 4 ] && echo "$(_fmt debug) ${@}" || true;         }
+
+function help() {
+    echo >&2 "${@}"
+    echo >&2 "  ${usage}"
+    echo >&2 ""
+}
+
+### Parse commandline options - adding the while loop around the
+### getopts loop allows commands anywhere in the command line.
+###
+### Note that cmd gets set to the first non-option string, others
+### are simply ignored
+#####################################################################
+
+BOARD=ev3dev
+
+while [ $# -gt 0 ] ; do
+    while getopts "fb:d:" opt; do
+        case "$opt" in
+           f) FORCE=true;;
+           b) BOARD="$OPTARG";;
+           d) _ROOTDIR="$OPTARG";;
+          \?) # unknown flag
+                help
+                exit 1
+            ;;
+        esac
+    done
+
+    shift $((OPTIND-1))
+
+    cmd=${cmd:=$1}
+
+    shift 1
+    OPTIND=1
+done
+
+[ "${cmd}" = "" ] && help && exit 1
+debug "cmd: ${cmd}"
+
+#####################################################################
+### Set up the variables for the commands
 
 SCRIPT_PATH=$(dirname $(readlink -f "$0"))
 
+debug "SCRIPT_PATH: ${SCRIPT_PATH}"
+
 CHROOTQEMUCMD="proot -q qemu-arm -v -1 -0"
-CHROOTQEMUBINDCMD=$CHROOTQEMUCMD" -b /dev -b /sys -b /proc"
+CHROOTQEMUBINDCMD=${CHROOTQEMUCMD}" -b /dev -b /sys -b /proc"
 CHROOTCMD="proot -v -1 -0"
 
-export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true LC_ALL=C LANGUAGE=C LANG=C
+export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true \
+    LC_ALL=C LANGUAGE=C LANG=C
 export PATH=$PATH:/usr/local/sbin:/usr/sbin:/sbin
 
-FORCE=""
-MSTRAP_SIM=
-EXIT_ON_ERROR=true
-while getopts efvns:a:d:m:p: opt; do
-	case $opt in
-	s) _SUITE="$OPTARG";;
-	a) _ARCH="$OPTARG";;
-	d) _ROOTDIR="$OPTARG";;
-	m) _MIRROR="$OPTARG";;
-	p) _PACKAGES="$OPTARG";;
-	n) MSTRAP_SIM="--simulate";;
-	e) EXIT_ON_ERROR=false;;
-	v) set -x;;
-	f) FORCE=true;;
-	?) usage; exit 1;;
-	esac
-done
-shift $(($OPTIND - 1))
-
-[ "$#" -ne 1 ] && { echo "too many positional arguments" >&2; usage; exit 1; }
-
-[ "$EXIT_ON_ERROR" = true ] && set -e
-
-BOARD="$1"
-
-[ ! -r "$BOARD" ] && BOARD="$SCRIPT_PATH/$BOARD"
-[ ! -r "$BOARD" ] && { echo "cannot find target directory: $BOARD" >&2; exit 1; }
-[ ! -r "$BOARD/multistrap.conf" ] && { echo "cannot read multistrap config: $BOARD/multistrap.conf" >&2; exit 1; }
+[ ! -r "${BOARD}" ] && BOARD="${SCRIPT_PATH}/${BOARD}"
+[ ! -r "${BOARD}" ] && fail "cannot find target directory: ${BOARD}"
+[ ! -r "${BOARD}/multistrap.conf" ] \
+    && fail "cannot read multistrap config: ${BOARD}/multistrap.conf"
 
 # source default options
-. "$SCRIPT_PATH/default/config"
+. "${SCRIPT_PATH}/default/config"
 
 # overwrite default options by target options
-[ -r "$BOARD/config" ] && . "$BOARD/config"
+[ -r "${BOARD}/config" ] && . "${BOARD}/config"
 
 # overwrite target options by commandline options
-SUITE=${_SUITE:-$SUITE}
-ARCH=${_ARCH:-$ARCH}
+MULTISTRAPCONF="multistrap.conf"
 ROOTDIR=$(readlink -m ${_ROOTDIR:-$ROOTDIR})
-MIRROR=${_MIRROR:-$MIRROR}
+TARBALL=$(pwd)/$(basename ${ROOTDIR}).tar
+IMAGE=$(pwd)/$(basename ${ROOTDIR}).img
 
-if [ "$_PACKAGES" = "" ] && [ -r "$BOARD/packages" ]; then
-	# if no packages were given by commandline, read from package files
-	for f in $BOARD/packages/*; do
-		while read line; do PACKAGES="$PACKAGES $line"; done < "$f"
-	done
-else
-	# otherwise set as given by commandline
-	PACKAGES="$_PACKAGES"
-fi
+### Runtime
+#####################################################################
 
-echo "I: --------------------------"
-echo "I: suite:   $SUITE"
-echo "I: arch:    $ARCH"
-echo "I: rootdir: $ROOTDIR"
-echo "I: mirror:  $MIRROR"
-echo "I: pkgs:    $PACKAGES"
-echo "I: --------------------------"
+set -e
 
-[ -e "$ROOTDIR.tar" ] && [ ! "$FORCE" = true ] && { echo "tarball $ROOTDIR.tar still exists" >&2; exit 1; }
+# Bash will remember & return the highest exitcode in a chain of pipes.
+# This way you can catch the error in case mysqldump fails in `mysqldump |gzip`
+set -o pipefail
 
-# if rootdir exists, either warn and abort or delete and continue
-if [ -e "$ROOTDIR" ]; then
-	if [ "$FORCE" = true ]; then
-		rm -rf $ROOTDIR
-	else
-		echo "root directory $ROOTDIR still exists" >&2
-		exit 1
-	fi
-fi
+#####################################################################
 
-multistrapconf_aptpreferences=false
-multistrapconf_cleanup=false;
+function create-conf() {
+    info "Creating multistrap configuration file..."
+    debug "BOARD: ${BOARD}"
+    for f in ${BOARD}/packages/*; do
+        while read line; do PACKAGES="${PACKAGES} $line"; done < "$f"
+    done
 
-# create multistrap.conf
-echo "I: create multistrap.conf"
-MULTISTRAPCONF=`tempfile -d . -p multistrap`
-echo -n > "$MULTISTRAPCONF"
-while read line; do
-	eval echo $line >> "$MULTISTRAPCONF"
-	if echo $line | grep -E -q "^aptpreferences="
-	then
-		multistrapconf_aptpreferences=true
-	fi
-	if echo $line | grep -E -q "^cleanup=true"
-	then
-		multistrapconf_cleanup=true
-	fi
-done < $BOARD/multistrap.conf
+    multistrapconf_aptpreferences=false
+    multistrapconf_cleanup=false;
 
-if [ "$multistrapconf_aptpreferences" = "true" ] && [ "$multistrapconf_cleanup" = "true" ]
-then
-	echo "W: aptpreferences= option with cleanup=true - apt pinning will not take effect."
-fi
+    debug "creating ${MULTISTRAPCONF}"
+    echo -n > "${MULTISTRAPCONF}"
+    while read line; do
+        eval echo $line >> "$MULTISTRAPCONF"
+        if echo $line | grep -E -q "^aptpreferences="
+        then
+                multistrapconf_aptpreferences=true
+        fi
+        if echo $line | grep -E -q "^cleanup=true"
+        then
+               multistrapconf_cleanup=true
+        fi
+    done < $BOARD/multistrap.conf
+}
 
-# download and extract packages
-echo "I: run multistrap" >&2
-proot -0 multistrap $MSTRAP_SIM -f "$MULTISTRAPCONF"
-[ -z "$MSTRAP_SIM" ] || exit 0
+function simulate-multistrap() {
+    MSTRAP_SIM="--simulate"
+    run-multistrap
+}
 
-rm -f "$MULTISTRAPCONF"
+function run-multistrap() {
+    info "running multistrap..."
+    [ -z ${FORCE} ] && [ -d "${ROOTDIR}" ] && \
+        fail "${ROOTDIR} already exists. Use -f option to overwrite."
+    debug "MULTISTRAPCONF: ${MULTISTRAPCONF}"
+    debug "ROOTDIR: ${ROOTDIR}"
+    if [ ! -z ${FORCE} ] && [ -d "${ROOTDIR}" ]; then
+        warn "Removing existing rootfs ${ROOTDIR}"
+        rm -rf ${ROOTDIR}
+    fi
+    proot -0 multistrap ${MSTRAP_SIM} --file "${MULTISTRAPCONF}" --no-auth
+}
 
-# copy initial directory tree - dereference symlinks
-echo "I: copy initial directory root tree $BOARD/root/ to $ROOTDIR/"
-if [ -r "$BOARD/root" ]; then
-	cp --recursive --dereference $BOARD/root/* $ROOTDIR/
-fi
+function copy-root() {
+    info "Copying root files from board definition..."
+    debug "BOARD: ${BOARD}"
+    debug "ROOTDIR: ${ROOTDIR}"
+    [ ! -d "${ROOTDIR}" ] && fail "${ROOTDIR} does not exist."
+    # copy initial directory tree - dereference symlinks
+    if [ -r "${BOARD}/root" ]; then
+        cp --recursive --dereference "${BOARD}/root/"* "${ROOTDIR}/"
+    fi
+}
 
-# call apt-get upgrade so that pinning rules in aptpreferences will take effect
-if [ "$multistrapconf_aptpreferences" = "true" ]
-then
-	echo "I: Running apt-get upgrade to ensure aptpreferences"
-	$CHROOTQEMUCMD $ROOTDIR apt-get upgrade --yes --force-yes --download-only
-fi
+function configure-packages () {
+    info "Configuring packages..."
+    [ ! -d "${ROOTDIR}" ] && fail "${ROOTDIR} does not exist."
 
-# preseed debconf
-echo "I: preseed debconf"
-if [ -r "$BOARD/debconfseed.txt" ]; then
-	cp "$BOARD/debconfseed.txt" $ROOTDIR/tmp/
-	$CHROOTQEMUCMD $ROOTDIR debconf-set-selections /tmp/debconfseed.txt
-	rm $ROOTDIR/tmp/debconfseed.txt
-fi
+    # preseed debconf
+    info "preseed debconf"
+    if [ -r "${BOARD}/debconfseed.txt" ]; then
+        cp "${BOARD}/debconfseed.txt" "${ROOTDIR}/tmp/"
+        ${CHROOTQEMUCMD} ${ROOTDIR} debconf-set-selections /tmp/debconfseed.txt
+        rm "${ROOTDIR}/tmp/debconfseed.txt"
+    fi
 
-# run preinst scripts
-for script in $ROOTDIR/var/lib/dpkg/info/*.preinst; do
-	[ "$script" = "$ROOTDIR/var/lib/dpkg/info/vpnc.preinst" ] && continue
-	echo "I: run preinst script ${script##$ROOTDIR}"
-	DPKG_MAINTSCRIPT_NAME=preinst \
-	DPKG_MAINTSCRIPT_PACKAGE="`basename $script .preinst`" \
-	$CHROOTQEMUBINDCMD $ROOTDIR ${script##$ROOTDIR} install
-done
+    # run preinst scripts
+    info "running preinst scripts..."
+    for script in ${ROOTDIR}/var/lib/dpkg/info/*.preinst; do
+        [ "${script}" = "${ROOTDIR}/var/lib/dpkg/info/vpnc.preinst" ] && continue
+        info "running preinst script ${script##$ROOTDIR}"
+        DPKG_MAINTSCRIPT_NAME=preinst \
+        DPKG_MAINTSCRIPT_PACKAGE="`basename ${script} .preinst`" \
+            ${CHROOTQEMUBINDCMD} ${ROOTDIR} ${script##$ROOTDIR} install
+    done
 
-# run dpkg --configure -a twice because of errors during the first run
-echo "I: configure packages"
-$CHROOTQEMUBINDCMD $ROOTDIR /usr/bin/dpkg --configure -a || $CHROOTQEMUBINDCMD $ROOTDIR /usr/bin/dpkg --configure -a || true
+    # run dpkg --configure -a twice because of errors during the first run
+    info "configuring packages..."
+    ${CHROOTQEMUBINDCMD} ${ROOTDIR} /usr/bin/dpkg --configure -a || \
+    ${CHROOTQEMUBINDCMD} ${ROOTDIR} /usr/bin/dpkg --configure -a || true
+}
 
-# source hooks
-if [ -r "$BOARD/hooks" ]; then
-	for f in $BOARD/hooks/*; do
-		echo "I: run hook $f"
-		. $f
-	done
-fi
+function run-hooks() {
+    info "Running hooks..."
+    [ ! -d "${ROOTDIR}" ] && fail "${ROOTDIR} does not exist."
 
-#cleanup
-echo "I: cleanup"
-rm $ROOTDIR/usr/sbin/policy-rc.d
+    # source hooks
+    if [ -r "${BOARD}/hooks" ]; then
+        for f in "${BOARD}"/hooks/*; do
+            info "running hook $f"
+            . $f
+        done
+    fi
+}
 
-# need to generate tar inside fakechroot so that absolute symlinks are correct
-TARBALL=$(pwd)/$(basename $ROOTDIR).tar.gz
-echo "I: create tarball $TARBALL"
-$CHROOTQEMUCMD $ROOTDIR tar -cpzf host-rootfs$TARBALL --exclude=host-rootfs /
+function create-tar() {
+    info "Creating tar of rootfs"
+    debug "ROOTDIR: ${ROOTDIR}"
+    debug "TARBALL: ${TARBALL}"
+    [ ! -d "${ROOTDIR}" ] && fail "${ROOTDIR} does not exist."
+    [ -z ${FORCE} ] && [ -f "${TARBALL}" ] \
+	    && fail "${TARBALL} exists. Use -f option to overwrite."
+    # need to generate tar inside fakechroot so that absolute symlinks are correct
+    info "creating tarball ${TARBALL}"
+    ${CHROOTQEMUCMD} ${ROOTDIR} tar -cpf host-rootfs/${TARBALL} --exclude=host-rootfs /
+}
 
+
+function create-image() {
+    info "Creating image file..."
+    debug "TARBALL: ${TARBALL}"
+	debug "IMAGE: ${IMAGE}"
+    [ ! -f ${TARBALL} ] && fail "Could not find ${TARBALL}"
+    [ -z ${FORCE} ] && [ -f ${IMAGE} ] && \
+        fail "${IMAGE} already exists. Use -f option to overwrite."
+
+    guestfish -N bootrootlv:/dev/vg0/lv0:vfat:ext3:500M:48M:mbr \
+         part-set-mbr-id /dev/sda 1 0x0b : \
+         set-label /dev/vg0/lv0 EV3_FILESYS : \
+         mount /dev/vg0/lv0 / : \
+         tar-in ${TARBALL} / : \
+         mkdir-p /media/mmc_p1 : \
+         mount /dev/sda1 /media/mmc_p1 : \
+         mv /uImage /media/mmc_p1/ : \
+         mv /ev3dev.rc.local /media/mmc_p1/ : \
+         mv /uInitrd /media/mmc_p1/ : \
+         mv /boot.scr /media/mmc_p1/ : \
+
+    # Hack to set the volume label on the vfat partition since guestfish does
+	# not know how to do that. Must be null padded to exactly 11 bytes.
+    echo -e -n "EV3_BOOT\0\0\0" | \
+	    dd of=test1.img bs=1 seek=32811 count=11 conv=notrunc >/dev/null 2>&1
+
+    mv test1.img ${IMAGE}
+}
+
+function run-shell() {
+    [ ! -d "${ROOTDIR}" ] && fail "${ROOTDIR} does not exist."
+    ${CHROOTQEMUCMD} ${ROOTDIR} bash
+}
+
+case "${cmd}" in
+    create-conf)         create-conf;;
+    simulate-multistrap) simulate-multistrap;;
+    run-multistrap)      run-multistrap;;
+    copy-root)           copy-root;;
+    configure-packages)  configure-packages;;
+    run-hooks)           run-hooks;;
+    create-tar)          create-tar;;
+    create-image)        create-image;;
+
+    shell) run-shell;;
+
+    all) create-conf
+         run-multistrap
+         copy-root
+         configure-packages
+         run-hooks
+         create-tar
+         create-image
+    ;;
+
+    *) fail "Unknown command. See brickstrap -h for list of commands.";;
+esac
