@@ -296,10 +296,10 @@ function create-image() {
     [ -z ${FORCE} ] && [ -f ${IMAGE} ] && \
         fail "${IMAGE} already exists. Use -f option to overwrite."
 
-    guestfish -N bootrootlv:/dev/vg0/lv0:vfat:ext3:500M:48M:mbr \
+    guestfish -N bootrootlv:/dev/ev3devVG/root:vfat:ext3:500M:48M:mbr \
          part-set-mbr-id /dev/sda 1 0x0b : \
-         set-label /dev/vg0/lv0 EV3_FILESYS : \
-         mount /dev/vg0/lv0 / : \
+         set-label /dev/ev3devVG/root EV3_FILESYS : \
+         mount /dev/ev3devVG/root / : \
          tar-in ${TARBALL} / : \
          mkdir-p /media/mmc_p1 : \
          mount /dev/sda1 /media/mmc_p1 : \

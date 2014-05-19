@@ -28,7 +28,7 @@ options g_cdc dev_addr=\$dev_addr host_addr=\$host_addr
 options g_ether dev_addr=\$dev_addr host_addr=\$host_addr
 EOF
 
-# Create swap partition (and make room for growing lv0 in vg0)
+# Create swap partition (and make room for growing root in ev3devVG)
 echo "Creating swap partition..."
 echo -n "n
 p
@@ -37,11 +37,11 @@ p
 
 w" | fdisk /dev/mmcblk0 || true # fdisk returns error since we are doing this online
 partprobe
-vgextend vg0 /dev/mmcblk0p3
-lvcreate --size 64M --name swap vg0
-mkswap /dev/mapper/vg0-swap
-swapon /dev/mapper/vg0-swap
-echo "/dev/mapper/vg0-swap none             swap   sw                                 0      0" >> /etc/fstab
+vgextend ev3devVG /dev/mmcblk0p3
+lvcreate --size 64M --name swap ev3devVG
+mkswap /dev/mapper/ev3devVG-swap
+swapon /dev/mapper/ev3devVG-swap
+echo "/dev/mapper/ev3devVG-swap none            swap   sw                                  0      0" >> /etc/fstab
 
 __END__
 
