@@ -8,6 +8,5 @@ netcat-openbsd
 network-manager
 net-tools
 nfs-common
-rtl8188eu-modules
 ssh
 wpasupplicant
