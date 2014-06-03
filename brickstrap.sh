@@ -284,7 +284,9 @@ function create-tar() {
 	    && fail "${TARBALL} exists. Use -f option to overwrite."
     # need to generate tar inside fakechroot so that absolute symlinks are correct
     info "creating tarball ${TARBALL}"
-    ${CHROOTQEMUCMD} ${ROOTDIR} tar -cpf host-rootfs/${TARBALL} --exclude=host-rootfs /
+    info "$(${CHROOTQEMUCMD} ${ROOTDIR} cat host-rootfs${BOARD}/tar-exclude)"
+    ${CHROOTQEMUCMD} ${ROOTDIR} tar -vcpf host-rootfs/${TARBALL} \
+        --exclude=host-rootfs --exclude-from=host-rootfs${BOARD}/tar-exclude /
 }
 
 
@@ -318,7 +320,7 @@ function create-image() {
 
 function run-shell() {
     [ ! -d "${ROOTDIR}" ] && fail "${ROOTDIR} does not exist."
-    ${CHROOTQEMUCMD} ${ROOTDIR} bash
+    HOME=/root ${CHROOTQEMUCMD} ${ROOTDIR} bash
 }
 
 case "${cmd}" in

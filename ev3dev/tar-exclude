@@ -1,0 +1,3 @@
+usr/sbin/policy-rc.d
+usr/local/sbin/flash-kernel
+etc/kernel-img.conf
