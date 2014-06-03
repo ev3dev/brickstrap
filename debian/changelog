@@ -1,10 +1,17 @@
-brickstrap (0.2.1) trusty; urgency=medium
+brickstrap (0.2.2) stable; urgency=low
 
-  * remove rtl8188eu-modules package
+  * remove /var/log from fstab
+  * Add tar-exclude file and remove cleanup hook
+
+ -- David Lechner <david@lechnology.com>  Tue, 03 Jun 2014 17:14:32 -0500
+
+brickstrap (0.2.1) stable; urgency=medium
+
+  * remove rtl8188eu-modules package (it is still installed by dependency)
 
  -- David Lechner <david@lechnology.com>  Mon, 19 May 2014 17:17:17 -0500
 
-brickstrap (0.2) trusty; urgency=medium
+brickstrap (0.2) stable; urgency=medium
 
   * fix fdisk not working
   * rename to brickstrap
