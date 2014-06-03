@@ -5,4 +5,3 @@ proc                      /proc           proc   defaults                       
 tmpfs                     /tmp            tmpfs  defaults,noatime                    0      0
 tmpfs                     /var/lock       tmpfs  defaults,noatime                    0      0
 tmpfs                     /var/run        tmpfs  defaults,noatime                    0      0
-tmpfs                     /var/log        tmpfs  defaults,noatime                    0      0
