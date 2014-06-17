@@ -1,3 +1,11 @@
+brickstrap (0.2.3) stable; urgency=low
+
+  * cleanup output of a couple commands
+  * make image size a parameter in the board config
+  * add ev3dev-next board config
+
+ -- David Lechner <david@lechnology.com>  Mon, 16 Jun 2014 23:06:38 -0500
+
 brickstrap (0.2.2) stable; urgency=low
 
   * remove /var/log from fstab
