@@ -294,12 +294,13 @@ $(${CHROOTQEMUCMD} ${ROOTDIR} cat host-rootfs${BOARD}/tar-exclude)"
 function create-image() {
     info "Creating image file..."
     debug "TARBALL: ${TARBALL}"
-	debug "IMAGE: ${IMAGE}"
+    debug "IMAGE: ${IMAGE}"
+    debug "IMAGE_FILE_SIZE: ${IMAGE_FILE_SIZE}"
     [ ! -f ${TARBALL} ] && fail "Could not find ${TARBALL}"
     [ -z ${FORCE} ] && [ -f ${IMAGE} ] && \
         fail "${IMAGE} already exists. Use -f option to overwrite."
 
-    guestfish -N bootrootlv:/dev/ev3devVG/root:vfat:ext3:500M:48M:mbr \
+    guestfish -N bootrootlv:/dev/ev3devVG/root:vfat:ext3:${IMAGE_FILE_SIZE}:32M:mbr \
          part-set-mbr-id /dev/sda 1 0x0b : \
          set-label /dev/ev3devVG/root EV3_FILESYS : \
          mount /dev/ev3devVG/root / : \

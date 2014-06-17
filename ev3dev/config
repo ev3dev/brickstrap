@@ -8,3 +8,4 @@ fi
 if [ -z $EV3DEV_MIRROR ]; then
 	EV3DEV_MIRROR="http://ev3dev.org/debian"
 fi
+IMAGE_FILE_SIZE="500MB"
