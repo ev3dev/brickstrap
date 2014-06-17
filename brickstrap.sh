@@ -269,8 +269,8 @@ function run-hooks() {
     # source hooks
     if [ -r "${BOARD}/hooks" ]; then
         for f in "${BOARD}"/hooks/*; do
-            info "running hook $f"
-            . $f
+            info "running hook ${f##${BOARD}/hooks/}"
+            . ${f}
         done
     fi
 }
@@ -284,8 +284,9 @@ function create-tar() {
 	    && fail "${TARBALL} exists. Use -f option to overwrite."
     # need to generate tar inside fakechroot so that absolute symlinks are correct
     info "creating tarball ${TARBALL}"
-    info "$(${CHROOTQEMUCMD} ${ROOTDIR} cat host-rootfs${BOARD}/tar-exclude)"
-    ${CHROOTQEMUCMD} ${ROOTDIR} tar -vcpf host-rootfs/${TARBALL} \
+    info "Excluding files:
+$(${CHROOTQEMUCMD} ${ROOTDIR} cat host-rootfs${BOARD}/tar-exclude)"
+    ${CHROOTQEMUCMD} ${ROOTDIR} tar -cpf host-rootfs/${TARBALL} \
         --exclude=host-rootfs --exclude-from=host-rootfs${BOARD}/tar-exclude /
 }
 
@@ -311,7 +312,7 @@ function create-image() {
          mv /boot.scr /media/mmc_p1/ : \
 
     # Hack to set the volume label on the vfat partition since guestfish does
-	# not know how to do that. Must be null padded to exactly 11 bytes.
+    # not know how to do that. Must be null padded to exactly 11 bytes.
     echo -e -n "EV3_BOOT\0\0\0" | \
 	    dd of=test1.img bs=1 seek=32811 count=11 conv=notrunc >/dev/null 2>&1
 
