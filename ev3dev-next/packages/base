@@ -1,0 +1,6 @@
+ev3dev-base
+linux-image-ev3dev
+locales
+plymouth
+systemd-sysv
+udev

@@ -1,0 +1,53 @@
+#!/bin/sh -e
+
+### BEGIN INIT INFO
+# Provides: firstboot
+# Required-Start: $all
+# Required-Stop:
+# Default-Start: S
+# Default-Stop:
+### END INIT INFO
+
+update-rc.d -f firstboot remove
+
+# generating ssh host key to be unique
+for f in rsa dsa ecdsa ed25519; do
+
+    if [ -f /etc/ssh/ssh_host_${f}_key ]; then
+        rm -f /etc/ssh/ssh_host_${f}_key
+        echo "generating ssh ${f} key..."
+        ssh-keygen -q -t ${f} -f /etc/ssh/ssh_host_${f}_key -C "" -N ""
+    fi
+done
+
+# set static mac address for usb networking
+eeprom_addr=$(hexdump -e '5/1 "%02X:" "%02X"' -s 0x3f06 -n 6 < /sys/bus/i2c/drivers/at24/1-0050/eeprom)
+dev_addr=$(echo ${eeprom_addr} | sed s/^00/02/)
+host_addr=$(echo ${eeprom_addr} | sed s/^00/12/)
+cat > /etc/modprobe.d/usb-net.conf << EOF
+options g_cdc dev_addr=${dev_addr} host_addr=${host_addr}
+options g_ether dev_addr=${dev_addr} host_addr=${host_addr}
+EOF
+
+# Create swap partition (and make room for growing root in ev3devVG)
+echo "Creating swap partition..."
+echo -n "n
+p
+3
+
+
+w" | fdisk /dev/mmcblk0 || true # fdisk returns error since we are doing this online
+partprobe
+vgextend ev3devVG /dev/mmcblk0p3
+lvcreate --yes --size 64M --name swap ev3devVG
+mkswap /dev/mapper/ev3devVG-swap
+swapon /dev/mapper/ev3devVG-swap
+echo "/dev/mapper/ev3devVG-swap none            swap   sw                                  0      0" >> /etc/fstab
+
+# set BootDevice for flash-kernel
+cat >> /etc/flash-kernel/db << EOF
+
+Machine: LEGO MINDSTORMS EV3 Programmable Brick
+Boot-Device: /dev/mmcblk0p1
+EOF
+

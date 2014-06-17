@@ -11,13 +11,14 @@ cat > $ROOTDIR/etc/init.d/firstboot << __END__
 update-rc.d -f firstboot remove
 
 # generating ssh host key to be unique
-for f in rsa dsa ecdsa; do rm -rf /etc/ssh/ssh_host_\${f}_key; done
-echo "generating ssh rsa key..."
-ssh-keygen -q -t rsa -f /etc/ssh/ssh_host_rsa_key -C "" -N ""
-echo "generating ssh dsa key..."
-ssh-keygen -q -t dsa -f /etc/ssh/ssh_host_dsa_key -C "" -N ""
-echo "generating ssh ecdsa key..."
-ssh-keygen -q -t ecdsa -f /etc/ssh/ssh_host_ecdsa_key -C "" -N ""
+for f in rsa dsa ecdsa ed25519; do
+
+    if [ -f /etc/ssh/ssh_host_\${f}_key ]; then
+        rm -f /etc/ssh/ssh_host_\${f}_key
+        echo "generating ssh \${f} key..."
+        ssh-keygen -q -t \${f} -f /etc/ssh/ssh_host_\${f}_key -C "" -N ""
+    fi
+done
 __END__
 
 chmod +x $ROOTDIR/etc/init.d/firstboot

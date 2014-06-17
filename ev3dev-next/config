@@ -1,0 +1,11 @@
+SUITE="testing"
+ARCH="armel"
+ROOTDIR="ev3dev-next-`date +%F`"
+MIRROR="http://ftp.debian.org/debian"
+if [ ! -z $DEBIAN_MIRROR ]; then
+	MIRROR=$DEBIAN_MIRROR
+fi
+if [ -z $EV3DEV_MIRROR ]; then
+	EV3DEV_MIRROR="http://ev3dev.org/debian"
+fi
+IMAGE_FILE_SIZE="900M"

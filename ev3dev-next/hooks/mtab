@@ -1,0 +1,3 @@
+# symlinks are dereferenced when copying the root directory, so we create
+# the link using a hook instead
+ln -fs /proc/self/mounts $ROOTDIR/etc/mtab

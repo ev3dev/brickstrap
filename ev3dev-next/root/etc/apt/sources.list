@@ -1,0 +1,3 @@
+deb http://ftp.debian.org/debian testing main contrib non-free
+
+deb http://ev3dev.org/debian testing main
