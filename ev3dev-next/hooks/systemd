@@ -1,10 +1,7 @@
-# enable the services from root/etc/systemd/system/
-$CHROOTQEMUCMD $ROOTDIR systemctl enable sshd-shutdown.service
-
 # make sure serial-getty@.service does not try to use the serial ports because
 # we use them for other things
-$CHROOTQEMUCMD $ROOTDIR systemctl mask serial-tty@ttyS0
-$CHROOTQEMUCMD $ROOTDIR systemctl mask serial-tty@ttyS1
-$CHROOTQEMUCMD $ROOTDIR systemctl mask serial-tty@ttyS2
-$CHROOTQEMUCMD $ROOTDIR systemctl mask serial-tty@ttySU0
-$CHROOTQEMUCMD $ROOTDIR systemctl mask serial-tty@ttySU1
+$CHROOTQEMUCMD $ROOTDIR systemctl mask serial-getty@ttyS0
+$CHROOTQEMUCMD $ROOTDIR systemctl mask serial-getty@ttyS1
+$CHROOTQEMUCMD $ROOTDIR systemctl mask serial-getty@ttyS2
+$CHROOTQEMUCMD $ROOTDIR systemctl mask serial-getty@ttySU0
+$CHROOTQEMUCMD $ROOTDIR systemctl mask serial-getty@ttySU1

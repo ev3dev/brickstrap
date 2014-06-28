@@ -1,5 +1,5 @@
 cat > release-notes.md << EOF
-Release notes for ev3dev.img vXX.XX.XX
+Release notes for ${IMAGE##$(pwd)/}
 ======================================
 
 Changes from previous version

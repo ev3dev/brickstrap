@@ -1,3 +1,0 @@
-# we always want this to run last in case the other hooks need it
-
-$CHROOTQEMUCMD $ROOTDIR apt-get clean
