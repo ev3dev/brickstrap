@@ -322,7 +322,7 @@ function create-image() {
 
 function run-shell() {
     [ ! -d "${ROOTDIR}" ] && fail "${ROOTDIR} does not exist."
-    HOME=/root ${CHROOTQEMUCMD} ${ROOTDIR} bash
+    HOME=/root ${CHROOTQEMUBINDCMD} ${ROOTDIR} bash
 }
 
 case "${cmd}" in
