@@ -152,10 +152,15 @@ export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true \
     LC_ALL=C LANGUAGE=C LANG=C
 export PATH=$PATH:/usr/local/sbin:/usr/sbin:/sbin
 
-[ ! -r "${BOARD}" ] && BOARD="${SCRIPT_PATH}/${BOARD}"
-[ ! -r "${BOARD}" ] && fail "cannot find target directory: ${BOARD}"
-[ ! -r "${BOARD}/multistrap.conf" ] \
-    && fail "cannot read multistrap config: ${BOARD}/multistrap.conf"
+[ -r "${BOARD}" ] || BOARD="${SCRIPT_PATH}/${BOARD}"
+[ -r "${BOARD}" ] || fail "cannot find target directory: ${BOARD}"
+[ -r "${BOARD}/multistrap.conf" ] \
+    || fail "cannot read multistrap config: ${BOARD}/multistrap.conf"
+
+SYSTEM_KERNEL_IMAGE="/boot/vmlinuz-$(uname -r)"
+[ -r "${SYSTEM_KERNEL_IMAGE}" ] \
+    || fail "Cannot read ${SYSTEM_KERNEL_IMAGE} needed by guestfish." \
+    "Set permission with 'sudo chmod +r ${SYSTEM_KERNEL_IMAGE}'."
 
 # source default options
 . "${SCRIPT_PATH}/default/config"
