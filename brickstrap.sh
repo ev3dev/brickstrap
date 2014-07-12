@@ -34,7 +34,7 @@ read -r -d '' usage <<-'EOF'
 
 Options
 -------
--b <board> Directory that contains board definition. (Default: ev3dev)
+-b <board> Directory that contains board definition. (Default: ev3dev-jessie)
 -d <dir>   The name of the directory for the rootfs. Note: This is also
            used for the .tar and .img file names.
 -f         Force overwriting existing files/directories.
@@ -111,7 +111,7 @@ function help() {
 ### are simply ignored
 #####################################################################
 
-BOARD=ev3dev
+BOARD="ev3dev-jessie"
 
 while [ $# -gt 0 ] ; do
     while getopts "fb:d:" opt; do

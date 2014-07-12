@@ -1,6 +1,6 @@
-SUITE="stable"
+SUITE="jessie"
 ARCH="armel"
-ROOTDIR="ev3dev-`date +%F`"
+ROOTDIR="ev3dev-jessie-`date +%F`"
 MIRROR="http://ftp.debian.org/debian"
 if [ ! -z $DEBIAN_MIRROR ]; then
 	MIRROR=$DEBIAN_MIRROR

@@ -1,6 +1,6 @@
-SUITE="testing"
+SUITE="wheezy"
 ARCH="armel"
-ROOTDIR="ev3dev-next-`date +%F`"
+ROOTDIR="ev3devi-wheezy-`date +%F`"
 MIRROR="http://ftp.debian.org/debian"
 if [ ! -z $DEBIAN_MIRROR ]; then
 	MIRROR=$DEBIAN_MIRROR

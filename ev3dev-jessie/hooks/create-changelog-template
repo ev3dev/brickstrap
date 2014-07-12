@@ -1,6 +1,6 @@
-cat > release-notes.md << EOF
+cat > ${IMAGE##$(pwd)/}-release-notes.md << EOF
 Release notes for ${IMAGE##$(pwd)/}
-======================================
+==============================================
 
 Changes from previous version
 -----------------------------

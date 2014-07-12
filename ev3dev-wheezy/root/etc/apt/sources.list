@@ -1,0 +1,3 @@
+deb http://ftp.debian.org/debian wheezy main contrib non-free
+
+deb http://ev3dev.org/debian wheezy main
