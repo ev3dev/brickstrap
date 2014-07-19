@@ -1,0 +1,15 @@
+# this file is part of ev3dev
+# /etc/init.d/console-setup breaks systemd, so this is a unit file to replace it
+# TODO: missing the part about including /etc/default/locale and exporting LANG
+
+[Unit]
+Description=Set console font and keymap
+Requires=remote-fs.service
+
+[Service]
+Type=oneshot
+ExecStart=/bin/setupcon --save
+
+[Install]
+WantedBy=getty@.service
+
