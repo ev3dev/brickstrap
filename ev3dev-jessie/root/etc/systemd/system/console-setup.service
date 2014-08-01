@@ -4,7 +4,7 @@
 
 [Unit]
 Description=Set console font and keymap
-Requires=remote-fs.service
+Requires=remote-fs.target
 
 [Service]
 Type=oneshot
