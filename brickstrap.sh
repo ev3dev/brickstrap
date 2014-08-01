@@ -13,9 +13,6 @@
 # More info: http://kvz.io/blog/2013/02/26/introducing-bash3boilerplate/
 # Version 0.0.1
 #
-# Usage:
-#  LOG_LEVEL=4 ./template.sh first_arg second_arg
-#
 # Licensed under MIT
 # Copyright (c) 2013 Kevin van Zonneveld
 # http://twitter.com/kvz
@@ -253,15 +250,26 @@ function configure-packages () {
 
     # run preinst scripts
     info "running preinst scripts..."
-    for script in ${ROOTDIR}/var/lib/dpkg/info/*.preinst; do
-        [ "${script}" = "${ROOTDIR}/var/lib/dpkg/info/vpnc.preinst" ] && continue
-        info "running preinst script ${script##$ROOTDIR}"
+    script_dir="${ROOTDIR}/var/lib/dpkg/info"
+    for script in ${script_dir}/*.preinst; do
+        blacklisted="false"
+        if [ -r "${BOARD}/preinst.blacklist" ]; then
+            while read line; do
+                if [ "${script##$script_dir}" = "/${line}.preinst" ]; then
+                    blacklisted="true"
+                    info "skipping ${script##$script_dir} (blacklisted)"
+                    break
+                fi
+            done < "${BOARD}/preinst.blacklist"
+        fi
+        [ "${blacklisted}" = "true" ] && continue
+        info "running ${script##$script_dir}"
         DPKG_MAINTSCRIPT_NAME=preinst \
         DPKG_MAINTSCRIPT_PACKAGE="`basename ${script} .preinst`" \
             ${CHROOTQEMUBINDCMD} ${ROOTDIR} ${script##$ROOTDIR} install
     done
 
-    # run dpkg --configure -a twice because of errors during the first run
+    # run dpkg `--configure -a` twice because of errors during the first run
     info "configuring packages..."
     ${CHROOTQEMUBINDCMD} ${ROOTDIR} /usr/bin/dpkg --configure -a || \
     ${CHROOTQEMUBINDCMD} ${ROOTDIR} /usr/bin/dpkg --configure -a || true
