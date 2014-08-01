@@ -34,3 +34,7 @@ Pin-Priority: 999
 Package: fbcat
 Pin: version 0.3-1ev3dev1
 Pin-Priority: 999
+
+Package: i2c-tools
+Pin: version 3.1.1-1ev3dev1
+Pin-Priority: 999
