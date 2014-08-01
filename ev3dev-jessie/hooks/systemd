@@ -1,7 +1,17 @@
 # make sure serial-getty@.service does not try to use the serial ports because
 # we use them for other things
-$CHROOTQEMUCMD $ROOTDIR systemctl mask serial-getty@ttyS0
-$CHROOTQEMUCMD $ROOTDIR systemctl mask serial-getty@ttyS1
-$CHROOTQEMUCMD $ROOTDIR systemctl mask serial-getty@ttyS2
-$CHROOTQEMUCMD $ROOTDIR systemctl mask serial-getty@ttySU0
-$CHROOTQEMUCMD $ROOTDIR systemctl mask serial-getty@ttySU1
+$CHROOTQEMUCMD $ROOTDIR systemctl mask serial-getty@ttyS0.service
+$CHROOTQEMUCMD $ROOTDIR systemctl mask serial-getty@ttyS1.service
+$CHROOTQEMUCMD $ROOTDIR systemctl mask serial-getty@ttyS2.service
+$CHROOTQEMUCMD $ROOTDIR systemctl mask serial-getty@ttySU0.service
+$CHROOTQEMUCMD $ROOTDIR systemctl mask serial-getty@ttySU1.service
+
+# we want rndis enabled by default since most users are Windows users
+$CHROOTQEMUCMD $ROOTDIR systemctl disable cdc-gadget.service
+
+# enable our workaround service for console-setup
+$CHROOTQEMUCMD $ROOTDIR systemctl enable console-setup.service
+
+# use ssh.socket instead of ssh.service so that ssh sessions exit on shutdown/reboot
+$CHROOTQEMUCMD $ROOTDIR systemctl disable ssh.service
+$CHROOTQEMUCMD $ROOTDIR systemctl enable ssh.socket
