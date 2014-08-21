@@ -11,5 +11,5 @@ Type=oneshot
 ExecStart=/bin/setupcon --save
 
 [Install]
-WantedBy=getty@.service
+Alias=systemd-vconsole-setup.service
 
