@@ -9,9 +9,6 @@ $CHROOTQEMUCMD $ROOTDIR systemctl mask serial-getty@ttySU1.service
 # we want rndis enabled by default since most users are Windows users
 $CHROOTQEMUCMD $ROOTDIR systemctl disable cdc-gadget.service
 
-# enable our workaround service for console-setup
-$CHROOTQEMUCMD $ROOTDIR systemctl enable console-setup.service
-
 # use ssh.socket instead of ssh.service so that ssh sessions exit on shutdown/reboot
 $CHROOTQEMUCMD $ROOTDIR systemctl disable ssh.service
 $CHROOTQEMUCMD $ROOTDIR systemctl enable ssh.socket
