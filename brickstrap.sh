@@ -321,7 +321,6 @@ function create-image() {
          mkdir-p /media/mmc_p1 : \
          mount /dev/sda1 /media/mmc_p1 : \
          mv /uImage /media/mmc_p1/ : \
-         mv /ev3dev.rc.local /media/mmc_p1/ : \
          mv /uInitrd /media/mmc_p1/ : \
          mv /boot.scr /media/mmc_p1/ : \
 
