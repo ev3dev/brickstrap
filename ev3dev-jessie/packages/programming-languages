@@ -3,6 +3,7 @@ golang-go
 guile-1.8
 lua5.1
 python
+python3
 python-gobject
 python-pyudev
 nodejs
