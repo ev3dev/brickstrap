@@ -1,3 +1,31 @@
+brickstrap (0.2.6) trusty; urgency=medium
+
+  * fix issue with sudoers file
+  * add firmware-ralink package
+  * Make systemd-journald storage persistent and get rid of syslogd
+  * use connamn instead of network-manager
+  * disable kbd service and add systemd .service file for console-setup
+  * [ev3dev-jessie] fix console-setup.service
+  * [ev3dev-jessie] fix beep pressed
+  * [ev3dev-jessie] remove input port 1 debug
+  * [ev3dev-jessie] add i2c-tools to pinned packages
+  * [ev3dev-jessie] systemd configuration
+  * add feature to blacklist problematic preinst scripts
+  * remove no-install-recommends apt-preference
+  * ruby1.9.1 is no longer in jessie
+  * use aptdefaultrelease to prefer ev3dev on inital apt-get
+  * use default python package
+  * set default value for kernel command line
+  * remove bluez-tools
+  * fix console-setup service not running
+  * console-setup.service moved to ev3dev-base package
+  * [gadget] reverse systemd service logic
+  * remove ev3dev.rc.local and rc.local and add brickman package
+  * add sbbnetfs and sshfs packages
+  * add python3
+
+ -- David Lechner <david@lechnology.com>  Tue, 07 Oct 2014 00:09:42 -0500
+
 brickstrap (0.2.5) stable; urgency=medium
 
   * change board names to use debian code names
