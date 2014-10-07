@@ -7,6 +7,5 @@ isc-dhcp-client
 netbase
 netcat-openbsd
 net-tools
-nfs-common
 ssh
 wpasupplicant

@@ -12,7 +12,6 @@ update-rc.d -f firstboot remove
 
 # generating ssh host key to be unique
 for f in rsa dsa ecdsa ed25519; do
-
     if [ -f /etc/ssh/ssh_host_${f}_key ]; then
         rm -f /etc/ssh/ssh_host_${f}_key
         echo "generating ssh ${f} key..."
