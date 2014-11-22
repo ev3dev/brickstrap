@@ -244,7 +244,7 @@ function configure-packages () {
     info "preseed debconf"
     if [ -r "${BOARD}/debconfseed.txt" ]; then
         cp "${BOARD}/debconfseed.txt" "${ROOTDIR}/tmp/"
-        ${CHROOTQEMUCMD} ${ROOTDIR} debconf-set-selections /tmp/debconfseed.txt
+        ${CHROOTQEMUCMD} -r ${ROOTDIR} debconf-set-selections /tmp/debconfseed.txt
         rm "${ROOTDIR}/tmp/debconfseed.txt"
     fi
 
@@ -266,13 +266,13 @@ function configure-packages () {
         info "running ${script##$script_dir}"
         DPKG_MAINTSCRIPT_NAME=preinst \
         DPKG_MAINTSCRIPT_PACKAGE="`basename ${script} .preinst`" \
-            ${CHROOTQEMUBINDCMD} ${ROOTDIR} ${script##$ROOTDIR} install
+            ${CHROOTQEMUBINDCMD} -r ${ROOTDIR} ${script##$ROOTDIR} install
     done
 
     # run dpkg `--configure -a` twice because of errors during the first run
     info "configuring packages..."
-    ${CHROOTQEMUBINDCMD} ${ROOTDIR} /usr/bin/dpkg --configure -a || \
-    ${CHROOTQEMUBINDCMD} ${ROOTDIR} /usr/bin/dpkg --configure -a || true
+    ${CHROOTQEMUBINDCMD} -r ${ROOTDIR} /usr/bin/dpkg --configure -a || \
+    ${CHROOTQEMUBINDCMD} -r ${ROOTDIR} /usr/bin/dpkg --configure -a || true
 }
 
 function run-hooks() {
@@ -298,8 +298,8 @@ function create-tar() {
     # need to generate tar inside fakechroot so that absolute symlinks are correct
     info "creating tarball ${TARBALL}"
     info "Excluding files:
-$(${CHROOTQEMUCMD} ${ROOTDIR} cat host-rootfs${BOARD}/tar-exclude)"
-    ${CHROOTQEMUCMD} ${ROOTDIR} tar -cpf host-rootfs/${TARBALL} \
+$(${CHROOTQEMUCMD} -r ${ROOTDIR} cat host-rootfs${BOARD}/tar-exclude)"
+    ${CHROOTQEMUCMD} -r ${ROOTDIR} tar -cpf host-rootfs/${TARBALL} \
         --exclude=host-rootfs --exclude-from=host-rootfs${BOARD}/tar-exclude /
 }
 
@@ -334,7 +334,7 @@ function create-image() {
 
 function run-shell() {
     [ ! -d "${ROOTDIR}" ] && fail "${ROOTDIR} does not exist."
-    HOME=/root ${CHROOTQEMUBINDCMD} ${ROOTDIR} bash
+    HOME=/root ${CHROOTQEMUBINDCMD} -r ${ROOTDIR} bash
 }
 
 case "${cmd}" in
