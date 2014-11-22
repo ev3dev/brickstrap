@@ -1,4 +1,4 @@
 echo -e -n "\nFONT='Lat15-TomThumb4x6.psf.gz'" >> $ROOTDIR/etc/default/console-setup
-$CHROOTQEMUCMD $ROOTDIR setupcon --save-only
+$CHROOTQEMUCMD -r $ROOTDIR setupcon --save-only
 # keyboard-setup takes long time during boot, so disabling for now.
-$CHROOTQEMUCMD $ROOTDIR update-rc.d keyboard-setup disable
+$CHROOTQEMUCMD -r $ROOTDIR update-rc.d keyboard-setup disable

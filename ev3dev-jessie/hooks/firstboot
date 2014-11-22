@@ -1,1 +1,1 @@
-$CHROOTQEMUCMD $ROOTDIR update-rc.d firstboot start 99 S
+$CHROOTQEMUCMD -r $ROOTDIR update-rc.d firstboot start 99 S
