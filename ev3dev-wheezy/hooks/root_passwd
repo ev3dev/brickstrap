@@ -1,4 +1,4 @@
 # set root password
-$CHROOTQEMUCMD $ROOTDIR chpasswd << EOF
+$CHROOTQEMUCMD chpasswd << EOF
 root:r00tme
 EOF
