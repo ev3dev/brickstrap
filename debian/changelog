@@ -1,3 +1,16 @@
+brickstrap (0.2.7) trusty; urgency=medium
+
+  * [ev3dev-jessie] fix sshfs was not included
+  * [ev3dev-jessie] No longer need to manually include required packages
+  * [ev3dev-jessie] Exclude dummy ssh host keys from tar image.
+  * [ev3dev-jessie] Disable NFS services by default.
+  * Use -r option for rootfs in proot
+  * Set debian_chroot when running shell.
+  * [ev3dev-jessie] Don't enable USB Gadget by default.
+  * [ev3dev-jessie] Add libnss-myhostname wanted by systemd.
+
+ -- David Lechner <david@lechnology.com>  Mon, 01 Dec 2014 16:57:07 -0600
+
 brickstrap (0.2.6) trusty; urgency=medium
 
   * fix issue with sudoers file
