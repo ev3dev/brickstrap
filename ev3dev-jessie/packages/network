@@ -4,6 +4,7 @@ ifupdown
 iproute
 iputils-ping
 isc-dhcp-client
+libnss-myhostname
 netbase
 netcat-openbsd
 net-tools
