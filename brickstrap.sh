@@ -334,7 +334,7 @@ function create-image() {
 
 function run-shell() {
     [ ! -d "${ROOTDIR}" ] && fail "${ROOTDIR} does not exist."
-    HOME=/root ${CHROOTQEMUBINDCMD} bash
+    debian_chroot="brickstrap" HOME=/root ${CHROOTQEMUBINDCMD} bash
 }
 
 case "${cmd}" in
