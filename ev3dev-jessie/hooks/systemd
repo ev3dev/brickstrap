@@ -6,9 +6,6 @@ $CHROOTQEMUCMD systemctl mask serial-getty@ttyS2.service
 $CHROOTQEMUCMD systemctl mask serial-getty@ttySU0.service
 $CHROOTQEMUCMD systemctl mask serial-getty@ttySU1.service
 
-# we want rndis enabled by default since most users are Windows users
-$CHROOTQEMUCMD systemctl enable rndis-gadget.service
-
 # use ssh.socket instead of ssh.service so that ssh sessions exit on shutdown/reboot
 $CHROOTQEMUCMD systemctl disable ssh.service
 $CHROOTQEMUCMD systemctl enable ssh.socket
