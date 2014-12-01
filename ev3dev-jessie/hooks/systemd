@@ -12,3 +12,7 @@ $CHROOTQEMUCMD $ROOTDIR systemctl enable rndis-gadget.service
 # use ssh.socket instead of ssh.service so that ssh sessions exit on shutdown/reboot
 $CHROOTQEMUCMD $ROOTDIR systemctl disable ssh.service
 $CHROOTQEMUCMD $ROOTDIR systemctl enable ssh.socket
+
+# disable nfs from running by default since most won't use it
+$CHROOTQEMUCMD $ROOTDIR systemctl disable nfs-common.service
+$CHROOTQEMUCMD $ROOTDIR systemctl disable rpcbind.service
