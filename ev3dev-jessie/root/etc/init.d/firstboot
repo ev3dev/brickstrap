@@ -12,11 +12,8 @@ update-rc.d -f firstboot remove
 
 # generating ssh host key to be unique
 for f in rsa dsa ecdsa ed25519; do
-    if [ -f /etc/ssh/ssh_host_${f}_key ]; then
-        rm -f /etc/ssh/ssh_host_${f}_key
-        echo "generating ssh ${f} key..."
-        ssh-keygen -q -t ${f} -f /etc/ssh/ssh_host_${f}_key -C "" -N ""
-    fi
+    echo "generating ssh ${f} key..."
+    ssh-keygen -q -t ${f} -f /etc/ssh/ssh_host_${f}_key -C "" -N ""
 done
 
 # set static mac address for usb networking
@@ -49,4 +46,3 @@ cat >> /etc/flash-kernel/db << EOF
 Machine: LEGO MINDSTORMS EV3 Programmable Brick
 Boot-Device: /dev/mmcblk0p1
 EOF
-
