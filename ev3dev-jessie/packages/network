@@ -2,6 +2,7 @@ connman
 ethtool
 ifupdown
 iproute
+iptables
 iputils-ping
 isc-dhcp-client
 libnss-myhostname
