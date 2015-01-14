@@ -1,5 +1,6 @@
 connman
 ethtool
+ev3dev-connman-config
 ifupdown
 iproute
 iptables
