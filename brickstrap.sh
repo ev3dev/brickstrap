@@ -297,10 +297,11 @@ function create-tar() {
 	    && fail "${TARBALL} exists. Use -f option to overwrite."
     # need to generate tar inside fakechroot so that absolute symlinks are correct
     info "creating tarball ${TARBALL}"
+    EXCLUDE_LIST=host-rootfs/${SCRIPT_PATH}/${BOARD}/tar-exclude
     info "Excluding files:
-$(${CHROOTQEMUCMD} cat host-rootfs${BOARD}/tar-exclude)"
+$(${CHROOTQEMUCMD} cat ${EXCLUDE_LIST})"
     ${CHROOTQEMUCMD} tar -cpf host-rootfs/${TARBALL} \
-        --exclude=host-rootfs --exclude-from=host-rootfs${BOARD}/tar-exclude /
+        --exclude=host-rootfs --exclude-from=${EXCLUDE_LIST} /
 }
 
 
