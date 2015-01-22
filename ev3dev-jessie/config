@@ -1,5 +1,6 @@
 SUITE="jessie"
 ARCH="armel"
+QEMU_COMMAND="qemu-arm -cpu arm926"
 ROOTDIR="ev3dev-jessie-`date +%F`"
 MIRROR="http://ftp.debian.org/debian"
 if [ ! -z $DEBIAN_MIRROR ]; then
