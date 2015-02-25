@@ -3,7 +3,7 @@
 # brickstrap - create a foreign architecture rootfs using multistrap, proot,
 #              and qemu usermode emulation and disk image using libguestfs
 #
-# Copyright (C) 2014 David Lechner <david@lechnology.com>
+# Copyright (C) 2014-2015 David Lechner <david@lechnology.com>
 # Copyright (C) 2014 Ralph Hempel <rhempel@hempeldesigngroup.com>
 #
 # Based on polystrap:
