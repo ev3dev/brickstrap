@@ -44,6 +44,7 @@ Options
   run-multistrap       runs multistrap (creates rootfs and downloads packages)
   copy-root            copies files from board definition folder to the rootfs
   configure-packages   configures the packages in the rootfs
+* run-hook <hook>      runs a single hook in the board configuration folder
   run-hooks            runs the hooks in the board configuration folder
   create-tar           creates a tar file from the rootfs folder
   create-image         creates a disk image file from the tar file
@@ -125,6 +126,10 @@ while [ $# -gt 0 ] ; do
 
     shift $((OPTIND-1))
 
+    if [ "${cmd}" == "run-hook" ]; then
+      run_hook_arg=$1
+    fi
+
     cmd=${cmd:=$1}
 
     shift 1
@@ -132,6 +137,7 @@ while [ $# -gt 0 ] ; do
 done
 
 [ "${cmd}" = "" ] && help && exit 1
+[ "${cmd}" = "run-hook" ] && [ "${run_hook_arg}" = "" ] && help && exit 1
 debug "cmd: ${cmd}"
 
 #####################################################################
@@ -276,6 +282,11 @@ function configure-packages () {
     ${CHROOTQEMUBINDCMD} /usr/bin/dpkg --configure -a || true
 }
 
+function run-hook() {
+  info "running hook ${1##${BOARD}/hooks/}"
+  . ${1}
+}
+
 function run-hooks() {
     info "Running hooks..."
     [ ! -d "${ROOTDIR}" ] && fail "${ROOTDIR} does not exist."
@@ -283,8 +294,7 @@ function run-hooks() {
     # source hooks
     if [ -r "${BOARD}/hooks" ]; then
         for f in "${BOARD}"/hooks/*; do
-            info "running hook ${f##${BOARD}/hooks/}"
-            . ${f}
+            run-hook ${f}
         done
     fi
 }
@@ -345,6 +355,7 @@ case "${cmd}" in
     run-multistrap)      run-multistrap;;
     copy-root)           copy-root;;
     configure-packages)  configure-packages;;
+    run-hook)            run-hook ${BOARD}/hooks/${run_hook_arg};;
     run-hooks)           run-hooks;;
     create-tar)          create-tar;;
     create-image)        create-image;;
