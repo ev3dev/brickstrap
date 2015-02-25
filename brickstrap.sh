@@ -39,18 +39,18 @@ Options
 
   Commands
   --------
-  create-conf          generates multistrap.conf
-* simulate-multistrap  runs multistrap with the --simulate option (for debuging)
-  run-multistrap       runs multistrap (creates rootfs and downloads packages)
-  copy-root            copies files from board definition folder to the rootfs
-  configure-packages   configures the packages in the rootfs
-* run-hook <hook>      runs a single hook in the board configuration folder
-  run-hooks            runs the hooks in the board configuration folder
-  create-tar           creates a tar file from the rootfs folder
-  create-image         creates a disk image file from the tar file
+  create-conf          generate the multistrap.conf file
+* simulate-multistrap  run multistrap with the --simulate option (for debuging)
+  run-multistrap       run multistrap (creates rootfs and downloads packages)
+  copy-root            copy files from board definition folder to the rootfs
+  configure-packages   configure the packages in the rootfs
+* run-hook <hook>      run a single hook in the board configuration folder
+  run-hooks            run all of the hooks in the board configuration folder
+  create-tar           create a tar file from the rootfs folder
+  create-image         create a disk image file from the tar file
 
-* shell                runs a bash shell in the rootfs using qemu
-  all                  runs all of the above commands (except *) in order
+* shell                run a bash shell in the rootfs using qemu
+  all                  run all of the above commands (except *) in order
 
   Environment Variables
   ---------------------
