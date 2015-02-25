@@ -1,3 +1,26 @@
+brickstrap (0.2.8) trusty; urgency=medium
+
+  [ David Lechner ]
+  * [ev3dev-jessie] Add screen package
+  * Add iptables package.
+  * Add ev3dev-connman-config package.
+
+  [ Larry Doolittle ]
+  * small changes needed based on kirkwood test
+
+  [ David Lechner ]
+  * Allow qemu command to be specified in board config file.
+  * [ev3dev-jessie] add nodejs-legacy to list of packages
+  * [ev3dev-jessie] Update lua to lua5.2
+  * [ev3dev-jessie] add `conspy` to packages.
+  * Fix create-tar failure.
+  * Add option to run a single hook
+  * Make command descriptions imparative
+  * Add tar-only feature for files that should be included in the image but not in the shell.
+  * Add proper README
+
+ -- David Lechner <david@lechnology.com>  Tue, 24 Feb 2015 22:28:25 -0600
+
 brickstrap (0.2.7) trusty; urgency=medium
 
   * [ev3dev-jessie] fix sshfs was not included
