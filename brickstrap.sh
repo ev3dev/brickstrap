@@ -311,8 +311,15 @@ function create-tar() {
     EXCLUDE_LIST=/host-rootfs/${BOARD}/tar-exclude
     info "Excluding files:
 $(${CHROOTQEMUCMD} cat ${EXCLUDE_LIST})"
-    ${CHROOTQEMUCMD} tar -cpf host-rootfs/${TARBALL} \
-        --exclude=host-rootfs --exclude-from=${EXCLUDE_LIST} /
+    ${CHROOTQEMUCMD} tar cpf /host-rootfs/${TARBALL} \
+        --exclude=host-rootfs --exclude=tar-only --exclude-from=${EXCLUDE_LIST} .
+    if [ -d "${BOARD}/tar-only" ]; then
+      cp -r "${BOARD}/tar-only/." "${ROOTDIR}/tar-only/"
+    fi
+    if [ -d "${ROOTDIR}/tar-only" ]; then
+      info "Adding tar-only files:"
+      ${CHROOTQEMUCMD} tar rvpf /host-rootfs/${TARBALL} -C /tar-only .
+    fi
 }
 
 

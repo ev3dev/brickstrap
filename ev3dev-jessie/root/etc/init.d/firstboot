@@ -39,10 +39,3 @@ lvcreate --yes --size 64M --name swap ev3devVG
 mkswap /dev/mapper/ev3devVG-swap
 swapon /dev/mapper/ev3devVG-swap
 echo "/dev/mapper/ev3devVG-swap none            swap   sw                                  0      0" >> /etc/fstab
-
-# set BootDevice for flash-kernel
-cat >> /etc/flash-kernel/db << EOF
-
-Machine: LEGO MINDSTORMS EV3 Programmable Brick
-Boot-Device: /dev/mmcblk0p1
-EOF
