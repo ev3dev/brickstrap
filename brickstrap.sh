@@ -4,7 +4,7 @@
 #              and qemu usermode emulation and disk image using libguestfs
 #
 # Copyright (C) 2014-2015 David Lechner <david@lechnology.com>
-# Copyright (C) 2014 Ralph Hempel <rhempel@hempeldesigngroup.com>
+# Copyright (C) 2014-2015 Ralph Hempel <rhempel@hempeldesigngroup.com>
 #
 # Based on polystrap:
 # Copyright (C) 2011 by Johannes 'josch' Schauer <j.schauer@email.de>
@@ -40,7 +40,7 @@ Options
   Commands
   --------
   create-conf          generate the multistrap.conf file
-* simulate-multistrap  run multistrap with the --simulate option (for debuging)
+* simulate-multistrap  run multistrap with the --simulate option (for debugging)
   run-multistrap       run multistrap (creates rootfs and downloads packages)
   copy-root            copy files from board definition folder to the rootfs
   configure-packages   configure the packages in the rootfs
@@ -155,6 +155,8 @@ export PATH=$PATH:/usr/local/sbin:/usr/sbin:/sbin
 [ -r "${BOARD}" ] || fail "cannot find target directory: ${BOARD}"
 [ -r "${BOARD}/multistrap.conf" ] \
     || fail "cannot read multistrap config: ${BOARD}/multistrap.conf"
+
+BOARD=$(readlink -f "${BOARD}")
 
 SYSTEM_KERNEL_IMAGE="/boot/vmlinuz-$(uname -r)"
 [ -r "${SYSTEM_KERNEL_IMAGE}" ] \
