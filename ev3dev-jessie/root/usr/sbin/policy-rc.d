@@ -1,1 +1,3 @@
-../../../../default/root/usr/sbin/policy-rc.d
+#!/bin/sh
+echo "sysvinit: All runlevel operations denied by policy" >&2
+exit 101
