@@ -26,6 +26,8 @@ options g_ether dev_addr=${dev_addr} host_addr=${host_addr}
 EOF
 
 # Create swap partition (and make room for growing root in ev3devVG)
+
+# create a physical partition using the free space on the SD card
 echo "Creating swap partition..."
 echo -n "n
 p
@@ -34,8 +36,15 @@ p
 
 w" | fdisk /dev/mmcblk0 || true # fdisk returns error since we are doing this online
 partprobe
+# wipe out any LVM information that may be left behind from a previous image
+dd if=/dev/zero of=/dev/mmcblk0p3 bs=4096 count=4
+sync
+# extend existing volume group to new partition
 vgextend ev3devVG /dev/mmcblk0p3
+# create a swap logical partition for swap
 lvcreate --yes --size 64M --name swap ev3devVG
+# activate swap
 mkswap /dev/mapper/ev3devVG-swap
 swapon /dev/mapper/ev3devVG-swap
+# and add it to fstab so it mounts at boot
 echo "/dev/mapper/ev3devVG-swap none            swap   sw                                  0      0" >> /etc/fstab
