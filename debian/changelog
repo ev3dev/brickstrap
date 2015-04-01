@@ -1,3 +1,19 @@
+brickstrap (0.2.9) trusty; urgency=medium
+
+  [ David Lechner ]
+  * Create COPYING
+  * Update some copyright stuff.
+  * Create COPYING.GPL3
+
+  [ Ralph Hempel ]
+  * Fixed BOARD variable so that the full board path can be reached in the hostfs
+
+  [ David Lechner ]
+  * [ev3dev-jessie] Get rid of symlinks.
+  * Use a little dd action to wipe out any LVM info that may be lurking on the SD card.
+
+ -- David Lechner <david@lechnology.com>  Tue, 31 Mar 2015 20:59:25 -0500
+
 brickstrap (0.2.8) trusty; urgency=medium
 
   [ David Lechner ]
