@@ -111,7 +111,6 @@ variables that are used. It might look something like this...
     SUITE="jessie"
     ARCH="armel"
     QEMU_COMMAND="qemu-arm -cpu arm926"
-    ROOTDIR="ev3dev-jessie-`date +%F`"
     MIRROR="http://ftp.debian.org/debian"
     IMAGE_FILE_SIZE="900M"
 
@@ -120,8 +119,6 @@ they are only need if they are used in that file. The variables used by the actu
 brickstrap script are:
 
 *   `QEMU_COMMAND`: Passed to `proot`. Is optional and will default to `qemu-arm`.
-*   `ROOTDIR`: Specifies the `<name>` above. This value is overridden when the
-    `-d` option is specified.
 *   'IMAGE_FILE_SIZE`: Passed to `guestfish` to determine the final image size.
 
 It may also be useful to use the pattern:

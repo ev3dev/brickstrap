@@ -109,14 +109,14 @@ function help() {
 ### are simply ignored
 #####################################################################
 
-BOARD="ev3dev-jessie"
+BOARDDIR="ev3dev-jessie"
 
 while [ $# -gt 0 ] ; do
     while getopts "fb:d:" opt; do
         case "$opt" in
            f) FORCE=true;;
-           b) BOARD="$OPTARG";;
-           d) _ROOTDIR="$OPTARG";;
+           b) BOARDDIR="$OPTARG";;
+           d) ROOTDIR="$OPTARG";;
           \?) # unknown flag
                 help
                 exit 1
@@ -147,31 +147,30 @@ SCRIPT_PATH=$(dirname $(readlink -f "$0"))
 
 debug "SCRIPT_PATH: ${SCRIPT_PATH}"
 
-export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true \
-    LC_ALL=C LANGUAGE=C LANG=C
+export DEBIAN_FRONTEND=noninteractive
+export DEBCONF_NONINTERACTIVE_SEEN=true
+export LC_ALL=C LANGUAGE=C LANG=C
 export PATH=$PATH:/usr/local/sbin:/usr/sbin:/sbin
 
-[ -r "${BOARD}" ] || BOARD="${SCRIPT_PATH}/${BOARD}"
-[ -r "${BOARD}" ] || fail "cannot find target directory: ${BOARD}"
-[ -r "${BOARD}/multistrap.conf" ] \
-    || fail "cannot read multistrap config: ${BOARD}/multistrap.conf"
+[ -r "${BOARDDIR}" ] || BOARDDIR="${SCRIPT_PATH}/${BOARDDIR}"
+[ -r "${BOARDDIR}" ] || fail "cannot find target directory: ${BOARDDIR}"
+[ -r "${BOARDDIR}/multistrap.conf" ] \
+    || fail "cannot read multistrap config: ${BOARDDIR}/multistrap.conf"
 
-BOARD=$(readlink -f "${BOARD}")
+BOARDDIR=$(readlink -f "${BOARDDIR}")
 
 SYSTEM_KERNEL_IMAGE="/boot/vmlinuz-$(uname -r)"
 [ -r "${SYSTEM_KERNEL_IMAGE}" ] \
     || fail "Cannot read ${SYSTEM_KERNEL_IMAGE} needed by guestfish." \
     "Set permission with 'sudo chmod +r ${SYSTEM_KERNEL_IMAGE}'."
 
-# source default options
-. "${SCRIPT_PATH}/default/config"
-
-# overwrite default options by target options
-[ -r "${BOARD}/config" ] && . "${BOARD}/config"
+# source board config file
+[ -r "${BOARDDIR}/config" ] && . "${BOARDDIR}/config"
 
 # overwrite target options by commandline options
 MULTISTRAPCONF="multistrap.conf"
-ROOTDIR=$(readlink -m ${_ROOTDIR:-$ROOTDIR})
+DEFAULT_ROOTDIR=$(readlink -f "$(basename ${BOARDDIR})-$(date +%F)")
+ROOTDIR=$(readlink -m ${ROOTDIR:-$DEFAULT_ROOTDIR})
 TARBALL=$(pwd)/$(basename ${ROOTDIR}).tar
 IMAGE=$(pwd)/$(basename ${ROOTDIR}).img
 
@@ -193,8 +192,8 @@ set -o pipefail
 
 function create-conf() {
     info "Creating multistrap configuration file..."
-    debug "BOARD: ${BOARD}"
-    for f in ${BOARD}/packages/*; do
+    debug "BOARDDIR: ${BOARDDIR}"
+    for f in ${BOARDDIR}/packages/*; do
         while read line; do PACKAGES="${PACKAGES} $line"; done < "$f"
     done
 
@@ -213,7 +212,7 @@ function create-conf() {
         then
                multistrapconf_cleanup=true
         fi
-    done < $BOARD/multistrap.conf
+    done < $BOARDDIR/multistrap.conf
 }
 
 function simulate-multistrap() {
@@ -235,13 +234,13 @@ function run-multistrap() {
 }
 
 function copy-root() {
-    info "Copying root files from board definition..."
-    debug "BOARD: ${BOARD}"
+    info "Copying root files from BOARDDIR definition..."
+    debug "BOARDDIR: ${BOARDDIR}"
     debug "ROOTDIR: ${ROOTDIR}"
     [ ! -d "${ROOTDIR}" ] && fail "${ROOTDIR} does not exist."
     # copy initial directory tree - dereference symlinks
-    if [ -r "${BOARD}/root" ]; then
-        cp --recursive --dereference "${BOARD}/root/"* "${ROOTDIR}/"
+    if [ -r "${BOARDDIR}/root" ]; then
+        cp --recursive --dereference "${BOARDDIR}/root/"* "${ROOTDIR}/"
     fi
 }
 
@@ -251,8 +250,8 @@ function configure-packages () {
 
     # preseed debconf
     info "preseed debconf"
-    if [ -r "${BOARD}/debconfseed.txt" ]; then
-        cp "${BOARD}/debconfseed.txt" "${ROOTDIR}/tmp/"
+    if [ -r "${BOARDDIR}/debconfseed.txt" ]; then
+        cp "${BOARDDIR}/debconfseed.txt" "${ROOTDIR}/tmp/"
         ${CHROOTQEMUCMD} debconf-set-selections /tmp/debconfseed.txt
         rm "${ROOTDIR}/tmp/debconfseed.txt"
     fi
@@ -262,14 +261,14 @@ function configure-packages () {
     script_dir="${ROOTDIR}/var/lib/dpkg/info"
     for script in ${script_dir}/*.preinst; do
         blacklisted="false"
-        if [ -r "${BOARD}/preinst.blacklist" ]; then
+        if [ -r "${BOARDDIR}/preinst.blacklist" ]; then
             while read line; do
                 if [ "${script##$script_dir}" = "/${line}.preinst" ]; then
                     blacklisted="true"
                     info "skipping ${script##$script_dir} (blacklisted)"
                     break
                 fi
-            done < "${BOARD}/preinst.blacklist"
+            done < "${BOARDDIR}/preinst.blacklist"
         fi
         [ "${blacklisted}" = "true" ] && continue
         info "running ${script##$script_dir}"
@@ -285,7 +284,7 @@ function configure-packages () {
 }
 
 function run-hook() {
-  info "running hook ${1##${BOARD}/hooks/}"
+  info "running hook ${1##${BOARDDIR}/hooks/}"
   . ${1}
 }
 
@@ -294,8 +293,8 @@ function run-hooks() {
     [ ! -d "${ROOTDIR}" ] && fail "${ROOTDIR} does not exist."
 
     # source hooks
-    if [ -r "${BOARD}/hooks" ]; then
-        for f in "${BOARD}"/hooks/*; do
+    if [ -r "${BOARDDIR}/hooks" ]; then
+        for f in "${BOARDDIR}"/hooks/*; do
             run-hook ${f}
         done
     fi
@@ -310,13 +309,13 @@ function create-tar() {
 	    && fail "${TARBALL} exists. Use -f option to overwrite."
     # need to generate tar inside fakechroot so that absolute symlinks are correct
     info "creating tarball ${TARBALL}"
-    EXCLUDE_LIST=/host-rootfs/${BOARD}/tar-exclude
+    EXCLUDE_LIST=/host-rootfs/${BOARDDIR}/tar-exclude
     info "Excluding files:
 $(${CHROOTQEMUCMD} cat ${EXCLUDE_LIST})"
     ${CHROOTQEMUCMD} tar cpf /host-rootfs/${TARBALL} \
         --exclude=host-rootfs --exclude=tar-only --exclude-from=${EXCLUDE_LIST} .
-    if [ -d "${BOARD}/tar-only" ]; then
-      cp -r "${BOARD}/tar-only/." "${ROOTDIR}/tar-only/"
+    if [ -d "${BOARDDIR}/tar-only" ]; then
+      cp -r "${BOARDDIR}/tar-only/." "${ROOTDIR}/tar-only/"
     fi
     if [ -d "${ROOTDIR}/tar-only" ]; then
       info "Adding tar-only files:"
@@ -364,7 +363,7 @@ case "${cmd}" in
     run-multistrap)      run-multistrap;;
     copy-root)           copy-root;;
     configure-packages)  configure-packages;;
-    run-hook)            run-hook ${BOARD}/hooks/${run_hook_arg};;
+    run-hook)            run-hook ${BOARDDIR}/hooks/${run_hook_arg};;
     run-hooks)           run-hooks;;
     create-tar)          create-tar;;
     create-image)        create-image;;

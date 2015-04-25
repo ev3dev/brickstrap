@@ -1,7 +1,6 @@
 SUITE="jessie"
 ARCH="armel"
 QEMU_COMMAND="qemu-arm -cpu arm926"
-ROOTDIR="ev3dev-jessie-`date +%F`"
 MIRROR="http://ftp.debian.org/debian"
 if [ ! -z $DEBIAN_MIRROR ]; then
 	MIRROR=$DEBIAN_MIRROR
@@ -9,4 +8,4 @@ fi
 if [ -z $EV3DEV_MIRROR ]; then
 	EV3DEV_MIRROR="http://ev3dev.org/debian"
 fi
-IMAGE_FILE_SIZE="900M"
+IMAGE_FILE_SIZE="1800M"
