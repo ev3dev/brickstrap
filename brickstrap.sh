@@ -333,21 +333,19 @@ function create-image() {
     [ -z ${FORCE} ] && [ -f ${IMAGE} ] && \
         fail "${IMAGE} already exists. Use -f option to overwrite."
 
-    guestfish -N bootrootlv:/dev/ev3devVG/root:vfat:ext3:${IMAGE_FILE_SIZE}:32M:mbr \
+    guestfish -N bootroot:vfat:ext4:${IMAGE_FILE_SIZE}:48M:mbr \
          part-set-mbr-id /dev/sda 1 0x0b : \
-         set-label /dev/ev3devVG/root EV3_FILESYS : \
-         mount /dev/ev3devVG/root / : \
+         set-label /dev/sda2 EV3_FILESYS : \
+         mount /dev/sda2 / : \
          tar-in ${TARBALL} / : \
          mkdir-p /media/mmc_p1 : \
          mount /dev/sda1 /media/mmc_p1 : \
-         mv /uImage /media/mmc_p1/ : \
-         mv /uInitrd /media/mmc_p1/ : \
-         mv /boot.scr /media/mmc_p1/ : \
+         glob mv /boot/flash/* /media/mmc_p1/ : \
 
     # Hack to set the volume label on the vfat partition since guestfish does
     # not know how to do that. Must be null padded to exactly 11 bytes.
     echo -e -n "EV3_BOOT\0\0\0" | \
-	    dd of=test1.img bs=1 seek=32811 count=11 conv=notrunc >/dev/null 2>&1
+        dd of=test1.img bs=1 seek=32811 count=11 conv=notrunc >/dev/null 2>&1
 
     mv test1.img ${IMAGE}
 }

@@ -1,4 +1,5 @@
-etc/flash-kernel/machine
+boot/flash/dummy
+etc/flash-kernel
 etc/kernel-img.conf
 etc/ssh/ssh_host_dsa_key
 etc/ssh/ssh_host_ecdsa_key

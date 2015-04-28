@@ -2,7 +2,6 @@ apt
 conspy
 dosfstools
 kmod
-lvm2
 ntp
 parted
 procps
