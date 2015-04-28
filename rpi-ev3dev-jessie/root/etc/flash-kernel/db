@@ -1,0 +1,3 @@
+Machine: Raspberry Pi Model B
+Boot-Kernel-Path: boot/flash/kernel.img
+Boot-Device: 

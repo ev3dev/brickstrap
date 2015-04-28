@@ -1,0 +1,7 @@
+echo -e -n "\nFONT='Lat15-TomThumb4x6.psf.gz'" >> $ROOTDIR/etc/default/console-setup
+$CHROOTQEMUCMD setupcon --save-only
+# keyboard-setup takes long time during boot, so disabling for now.
+$CHROOTQEMUCMD update-rc.d keyboard-setup disable
+# `kbd` does the same thing as `console-setup`/`keyboard-setup`, so we disable it too,
+# Also, `kbd` breaks systemd, so we really don't want it enabled.
+$CHROOTQEMUCMD update-rc.d kbd disable

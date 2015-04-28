@@ -1,0 +1,16 @@
+avahi-daemon
+connman
+ethtool
+ev3dev-connman-config
+ifupdown
+iproute
+iptables
+iputils-ping
+isc-dhcp-client
+libnss-mdns
+libnss-myhostname
+netbase
+netcat-openbsd
+net-tools
+ssh
+wpasupplicant

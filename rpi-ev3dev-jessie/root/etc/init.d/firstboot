@@ -1,0 +1,22 @@
+#!/bin/sh -e
+
+### BEGIN INIT INFO
+# Provides: firstboot
+# Required-Start: $all
+# Required-Stop:
+# Default-Start: S
+# Default-Stop:
+### END INIT INFO
+
+update-rc.d -f firstboot remove
+
+# generating ssh host key to be unique
+for f in rsa dsa ecdsa ed25519; do
+    echo "generating ssh ${f} key..."
+    ssh-keygen -q -t ${f} -f /etc/ssh/ssh_host_${f}_key -C "" -N ""
+done
+
+# expand the root file system
+parted --script /dev/mmcblk0 unit % resizepart 2 100%
+partprobe
+resize2fs /dev/mmcblk0p2

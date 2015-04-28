@@ -1,0 +1,6 @@
+SUITE="jessie"
+ARCH="armhf"
+QEMU_COMMAND="qemu-arm -cpu arm1176"
+RASPBIAN_MIRROR=${RASPBIAN_MIRROR:-"http://archive.raspbian.org/raspbian"}
+EV3DEV_MIRROR=${EV3DEV_MIRROR:-"http://ev3dev.org/debian"}
+IMAGE_FILE_SIZE=${IMAGE_FILE_SIZE:-"1800M"}

@@ -1,0 +1,1 @@
+echo "127.0.0.1	ev3dev ev3dev.local" >> $ROOTDIR/etc/hosts

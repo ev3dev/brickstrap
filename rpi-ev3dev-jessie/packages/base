@@ -1,0 +1,6 @@
+flash-kernel
+linux-image-ev3dev-rpi
+locales
+rpi-mkimage
+systemd-sysv
+udev

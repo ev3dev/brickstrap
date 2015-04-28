@@ -1,0 +1,27 @@
+cat > ${IMAGE##$(pwd)/}-release-notes.md << EOF
+Release notes for ${IMAGE##$(pwd)/}
+==============================================
+
+Changes from previous version
+-----------------------------
+
+
+Known issues
+------------
+
+
+Built using
+-----------
+* $(lsb_release -ds)
+* $(dpkg-query --show brickstrap | sed 's/\t/ /')
+* $(dpkg-query --show multistrap | sed 's/\t/ /')
+* $(dpkg-query --show proot | sed 's/\t/ /')
+* $(dpkg-query --show libguestfs-tools | sed 's/\t/ /')
+
+Included Packages
+-----------------
+
+\`\`\`
+$($CHROOTQEMUCMD dpkg -l)
+\`\`\`
+EOF

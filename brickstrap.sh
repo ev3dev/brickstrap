@@ -54,16 +54,20 @@ Options
 
   Environment Variables
   ---------------------
-  LOG_LEVEL     Specifies log level verbosity (0-4)
-                0=fail, ... 3=info(default), 4=debug
+  LOG_LEVEL       Specifies log level verbosity (0-4)
+                  0=fail, ... 3=info(default), 4=debug
 
-  DEBIAN_MIRROR Specifies the debian mirror used by apt
-                default: http://ftp.debian.org/debian
-                (applies to create-conf only)
+  DEBIAN_MIRROR   Specifies the debian mirror used by apt
+                  default: http://ftp.debian.org/debian
+                  (applies to create-conf only)
 
-  EV3DEV_MIRROR Specifies the ev3dev mirror used by apt
-                default: http://ev3dev.org/debian
-                (applies to create-conf only)
+  EV3DEV_MIRROR   Specifies the ev3dev mirror used by apt
+                  default: http://ev3dev.org/debian
+                  (applies to create-conf only)
+
+  RASPBIAN_MIRROR Specifies the Raspbian mirror used by apt
+                  default: http://archive.raspbian.org/raspbian
+                  (applies to create-conf only)
 EOF
 
 ### Functions
