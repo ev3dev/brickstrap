@@ -119,7 +119,7 @@ they are only need if they are used in that file. The variables used by the actu
 brickstrap script are:
 
 *   `QEMU_COMMAND`: Passed to `proot`. Is optional and will default to `qemu-arm`.
-*   'IMAGE_FILE_SIZE`: Passed to `guestfish` to determine the final image size.
+*   `IMAGE_FILE_SIZE`: Passed to `guestfish` to determine the final image size.
 
 It may also be useful to use the pattern:
 
@@ -166,6 +166,13 @@ as `/etc/fstab`. Symbolic links will be dereferenced (so if you actually need
 a symbolic link, you have to create it with a hook instead). The files are
 copied after package are unpacked, but before packages are configured.
 
+### The `root/boot/flash` directory
+
+The contents of this directory will be moved to the FAT partition of the image
+file when it is created. So, for example, if you have a `uImage` file of the
+kernel that is needed in the FAT partition by the bootloader, then just place it
+at `root/boot/flash/uImage` and brickstrap will take care of the rest.
+
 ### The `packages` directory
 
 This directory contains files withs lists of package names. You can use multiple
@@ -192,11 +199,10 @@ process, but it would be very problematic when trying to run on the device.
 ### The `tar-only` directory
 
 This directory contains files that we *don't* want in brickstrap shell but *do*
-want in the final image file. For example, in ev3dev-jessie, we have
+want in the final image file. For example, at one time, in ev3dev-jessie, we had
 `/etc/flash-kernel/db` that specifies the install location of the kernel at
-`/dev/mmcblk0p1`. This probably does not exist on the host computer and even
-if it does, we don't want to write to it. But we need it in the final image in
-order for flash-kernel to work properly.
+`/dev/mmcblk0p1`. This broke `flash-kernel` in the bootstrap environment, but
+was required in the actual image file.
 
 The files in this directory must include the full path as if they were in the
 root directory.
