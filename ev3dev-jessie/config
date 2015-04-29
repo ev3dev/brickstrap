@@ -3,4 +3,4 @@ ARCH="armel"
 QEMU_COMMAND="qemu-arm -cpu arm926"
 DEBIAN_MIRROR=${DEBIAN_MIRROR:-"http://ftp.debian.org/debian"}
 EV3DEV_MIRROR=${EV3DEV_MIRROR:-"http://ev3dev.org/debian"}
-IMAGE_FILE_SIZE=${IMAGE_FILE_SIZE:-"900M"}
+IMAGE_FILE_SIZE=${IMAGE_FILE_SIZE:-"1800M"}
