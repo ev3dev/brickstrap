@@ -17,6 +17,7 @@ for f in rsa dsa ecdsa ed25519; do
 done
 
 # expand the root file system
+# Note, this will break if using an initramfs
 parted --script /dev/mmcblk0 unit % resizepart 2 100%
 partprobe
 resize2fs /dev/mmcblk0p2

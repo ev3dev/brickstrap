@@ -26,6 +26,7 @@ options g_ether dev_addr=${dev_addr} host_addr=${host_addr}
 EOF
 
 # expand the root file system
+# Note, this will break if using an initramfs
 parted --script /dev/mmcblk0 unit % resizepart 2 100%
 partprobe
 resize2fs /dev/mmcblk0p2

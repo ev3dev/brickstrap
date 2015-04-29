@@ -1,5 +1,4 @@
 Machine: LEGO MINDSTORMS EV3 Programmable Brick
 Boot-Kernel-Path: boot/flash/uImage
-Boot-Initrd-Path: boot/flash/uInitrd
 Boot-Script-Path: boot/flash/boot.scr
 Boot-Device: 
