@@ -1,5 +1,6 @@
 flash-kernel
 linux-image-ev3dev-rpi
+libpam-systemd
 locales
 rpi-mkimage
 systemd-sysv

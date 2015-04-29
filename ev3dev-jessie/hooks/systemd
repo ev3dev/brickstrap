@@ -6,10 +6,6 @@ $CHROOTQEMUCMD systemctl mask serial-getty@ttyS2.service
 $CHROOTQEMUCMD systemctl mask serial-getty@ttySU0.service
 $CHROOTQEMUCMD systemctl mask serial-getty@ttySU1.service
 
-# use ssh.socket instead of ssh.service so that ssh sessions exit on shutdown/reboot
-$CHROOTQEMUCMD systemctl disable ssh.service
-$CHROOTQEMUCMD systemctl enable ssh.socket
-
 # disable nfs from running by default since most won't use it
 $CHROOTQEMUCMD systemctl disable nfs-common.service
 $CHROOTQEMUCMD systemctl disable rpcbind.service

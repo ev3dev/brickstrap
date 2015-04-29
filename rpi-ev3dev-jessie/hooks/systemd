@@ -2,10 +2,6 @@
 # so that it can be used by BrickPi
 $CHROOTQEMUCMD systemctl mask serial-getty@ttyAMA0.service
 
-# use ssh.socket instead of ssh.service so that ssh sessions exit on shutdown/reboot
-$CHROOTQEMUCMD systemctl disable ssh.service
-$CHROOTQEMUCMD systemctl enable ssh.socket
-
 # disable nfs from running by default since most won't use it
 $CHROOTQEMUCMD systemctl disable nfs-common.service
 $CHROOTQEMUCMD systemctl disable rpcbind.service

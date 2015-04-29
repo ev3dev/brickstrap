@@ -1,6 +1,7 @@
 brickman
 ev3dev-base
 linux-image-ev3dev-ev3
+libpam-systemd
 locales
 plymouth
 systemd-sysv
