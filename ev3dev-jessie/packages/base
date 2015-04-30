@@ -1,5 +1,6 @@
 brickman
 ev3dev-base
+dphys-swapfile
 linux-image-ev3dev-ev3
 libpam-systemd
 locales
