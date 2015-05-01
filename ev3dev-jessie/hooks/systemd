@@ -9,3 +9,6 @@ $CHROOTQEMUCMD systemctl mask serial-getty@ttySU1.service
 # disable nfs from running by default since most won't use it
 $CHROOTQEMUCMD systemctl disable nfs-common.service
 $CHROOTQEMUCMD systemctl disable rpcbind.service
+
+# disable smbd from running by default. Want to leave nmbd on though.
+$CHROOTQEMUCMD systemctl disable smbd.service
