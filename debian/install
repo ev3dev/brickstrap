@@ -2,4 +2,4 @@ brickstrap.sh usr/share/brickstrap/
 default usr/share/brickstrap/
 ev3dev-wheezy usr/share/brickstrap/
 ev3dev-jessie usr/share/brickstrap/
-
+rpi-ev3dev-jessie usr/share/brickstrap/
