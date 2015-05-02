@@ -1,3 +1,23 @@
+brickstrap (0.3.0) trusty; urgency=medium
+
+  * Rename BOARD to BOARDDIR and get rid of ROOTDIR from config
+  * Don't use lvm and change ext3 to ext4 and change how flash-kernel works.
+  * [ev3dev-jessie] add packages for zeroconf and bash completion.
+  * [rpi-ev3dev-jessie] Inital board support.
+  * [ev3dev-jessie] Rename programming-languages directory to development
+  * Add bit about root/boot/flash to README.md
+  * Clear PROMPT_COMMAND environment variable when starting brickstrap shell
+  * Go back to using default ssh.socket and add libpam-systemd package
+  * [ev3dev-jessie] Make base image ~2GB.
+  * [ev3dev-jessie] remove bash-completion package
+  * [ev3dev-jessie] No initrd.
+  * Move dphys-swapfile since it is not actually a file system
+  * [ev3dev-jessie] Add samba and libnss-winbind packages
+  * Fix pass in /etc/fstab
+  * [rpi-ev3dev-jessie] Change hostname to ev3dev-rpi
+
+ -- David Lechner <david@lechnology.com>  Fri, 01 May 2015 19:03:13 -0500
+
 brickstrap (0.2.9) trusty; urgency=medium
 
   [ David Lechner ]
