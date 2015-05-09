@@ -1,8 +1,10 @@
 brickman
 ev3dev-base
 dphys-swapfile
+flash-kernel
 linux-image-ev3dev-ev3
 libpam-systemd
 locales
 systemd-sysv
+u-boot-tools
 udev
