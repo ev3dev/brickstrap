@@ -4,7 +4,11 @@
 
 # Dexter Industries BrickPi settings
 init_uart_clock=32000000
-dtparam=i2c=on
+dtoverlay=brickpi
+# uncomment if you have a rev 1 board that uses gpio 21 instead of gpio 27
+#dtparam=brickpi_led1_gpio=21
+# uncomment to disable BrickPi LEDs on boot.
+#dtparam=brickpi_led1_trigger=none,brickpi_led2_trigger=none
 
 # uncomment if you get no picture on HDMI for a default "safe" mode
 #hdmi_safe=1
