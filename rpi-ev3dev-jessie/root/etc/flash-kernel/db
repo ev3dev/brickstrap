@@ -1,3 +1,4 @@
 Machine: Raspberry Pi Model B
 Boot-Kernel-Path: boot/flash/kernel.img
+Boot-DTB-Path: boot/flash/bcm2708-rpi-b.dtb
 Boot-Device: 

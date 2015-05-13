@@ -5,7 +5,8 @@
 # Dexter Industries BrickPi settings
 init_uart_clock=32000000
 dtoverlay=brickpi
-# uncomment if you have a rev 1 board that uses gpio 21 instead of gpio 27
+# uncomment if you have a Model B Rev 1 board that uses gpio 21 instead of
+# gpio 27
 #dtparam=brickpi_led1_gpio=21
 # uncomment to disable BrickPi LEDs on boot.
 #dtparam=brickpi_led1_trigger=none,brickpi_led2_trigger=none
