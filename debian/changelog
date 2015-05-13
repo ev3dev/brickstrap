@@ -1,3 +1,13 @@
+brickstrap (0.3.1) trusty; urgency=medium
+
+  * Add rpi-ev3dev-jessie to debian/install
+  * [ev3dev-jessie] Add flash-kernel and u-boot-tools.
+  * [rpi-ev3dev-jessie] Add brickpi and flash-kernel stuff.
+  * [rpi-ev3dev-jessie] Fix ev3dev raspbian archive URL
+  * [rpi-ev3dev-jessie] A few more changes needed for release.
+
+ -- David Lechner <david@lechnology.com>  Wed, 13 May 2015 12:54:01 -0500
+
 brickstrap (0.3.0) trusty; urgency=medium
 
   * Rename BOARD to BOARDDIR and get rid of ROOTDIR from config
