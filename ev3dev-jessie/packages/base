@@ -1,6 +1,8 @@
 brickman
-ev3dev-base
+ev3-config
+ev3-systemd
 dphys-swapfile
+firmware-ev3
 flash-kernel
 linux-image-ev3dev-ev3
 libpam-systemd
