@@ -9,7 +9,6 @@ iputils-ping
 isc-dhcp-client
 libnss-mdns
 libnss-myhostname
-libnss-winbind
 netbase
 netcat-openbsd
 net-tools
