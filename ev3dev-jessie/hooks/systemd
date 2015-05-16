@@ -12,3 +12,5 @@ $CHROOTQEMUCMD systemctl disable rpcbind.service
 
 # disable smbd from running by default. Want to leave nmbd on though.
 $CHROOTQEMUCMD systemctl disable smbd.service
+# we really don't want this running - it causes a long timeout on boot
+$CHROOTQEMUCMD systemctl mask samba-ad-dc.service
