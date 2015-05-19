@@ -94,9 +94,9 @@ binaries (like gcc).
 Board Configuration Files
 -------------------------
 
-Currently, only `ev3dev-jessie` is being developed, so use it as a reference.
+Currently, only `*-ev3dev-jessie` are being developed, so use them as a reference.
 There is a `brickstrap-nb` script for creating new board files, but it is not
-maintained, so just copy `ev3dev-jessie` instead.
+maintained, so just copy one of the `*-ev3dev-jessie` directories instead.
 
 __Note:__ brickstrap will look for a board configuration directory in the current
 working directory and then in the directory where `brickstrap.sh` is located.

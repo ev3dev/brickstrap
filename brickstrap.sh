@@ -113,7 +113,7 @@ function help() {
 ### are simply ignored
 #####################################################################
 
-BOARDDIR="ev3dev-jessie"
+BOARDDIR="ev3-ev3dev-jessie"
 
 while [ $# -gt 0 ] ; do
     while getopts "fb:d:" opt; do
