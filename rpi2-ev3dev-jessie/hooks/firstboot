@@ -1,0 +1,1 @@
+$CHROOTQEMUCMD update-rc.d firstboot start 99 S

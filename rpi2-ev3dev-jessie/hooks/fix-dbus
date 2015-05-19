@@ -1,0 +1,4 @@
+# permissions for the "messagebus" group get messed up somehow, so we
+# reconfigure the dbus package to fix it.
+
+$CHROOTQEMUCMD dpkg-reconfigure dbus

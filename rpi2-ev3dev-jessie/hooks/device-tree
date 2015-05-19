@@ -1,0 +1,2 @@
+# Also want the brickpi overlay in the image
+cp $ROOTDIR/usr/lib/linux-image-*/brickpi-overlay.dtb $ROOTDIR/boot/flash/overlays/

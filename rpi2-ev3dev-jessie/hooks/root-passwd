@@ -1,0 +1,8 @@
+# set root password
+$CHROOTQEMUCMD chpasswd << EOF
+root:r00tme
+EOF
+
+# allow root to login via ssh
+sed -i 's/^PermitRootLogin without-password/PermitRootLogin yes/' \
+    $ROOTDIR/etc/ssh/sshd_config

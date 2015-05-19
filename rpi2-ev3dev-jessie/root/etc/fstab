@@ -1,0 +1,4 @@
+#<file system>  <mount point>   <type> <options>                           <dump> <pass>
+/dev/mmcblk0p1  /boot/flash     vfat   defaults,errors=remount-ro,noatime  0      2
+/dev/mmcblk0p2  /               ext4   defaults,errors=remount-ro,noatime  0      1
+proc            /proc           proc   defaults                            0      0
