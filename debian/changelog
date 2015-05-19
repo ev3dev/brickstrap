@@ -1,3 +1,16 @@
+brickstrap (0.3.2) trusty; urgency=medium
+
+  * [ev3dev-jessie] Replace ev3dev base with new packages
+  * Remove libnss-winbind.
+  * [ev3dev-jessie] Disable samba-ad-dc.service
+  * [ev3dev-jessie] Make firstboot a proper init script.
+  * [rpi-ev3dev-jessie] fix hosts, don't enable samba-ad-dc and fix firstboot
+  * [rpi2-ev3dev-jessie] Initial board support.
+  * Make master main branch.
+  * Rename ev3dev-jessie board to ev3-ev3dev-jessie
+
+ -- David Lechner <david@lechnology.com>  Tue, 19 May 2015 18:50:19 -0500
+
 brickstrap (0.3.1) trusty; urgency=medium
 
   * Add rpi-ev3dev-jessie to debian/install
