@@ -14,9 +14,10 @@ Built using
 -----------
 * $(lsb_release -ds)
 * $(dpkg-query --show brickstrap | sed 's/\t/ /')
+* $(dpkg-query --show libguestfs-tools | sed 's/\t/ /')
 * $(dpkg-query --show multistrap | sed 's/\t/ /')
 * $(dpkg-query --show proot | sed 's/\t/ /')
-* $(dpkg-query --show libguestfs-tools | sed 's/\t/ /')
+* $(dpkg-query --show qemu-user | sed 's/\t/ /')
 
 Included Packages
 -----------------
