@@ -163,10 +163,11 @@ export PATH=$PATH:/usr/local/sbin:/usr/sbin:/sbin
 
 BOARDDIR=$(readlink -f "${BOARDDIR}")
 
-SYSTEM_KERNEL_IMAGE="/boot/vmlinuz-$(uname -r)"
-[ -r "${SYSTEM_KERNEL_IMAGE}" ] \
-    || fail "Cannot read ${SYSTEM_KERNEL_IMAGE} needed by guestfish." \
-    "Set permission with 'sudo chmod +r ${SYSTEM_KERNEL_IMAGE}'."
+for SYSTEM_KERNEL_IMAGE in /boot/vmlinuz-*; do
+    [ -r "${SYSTEM_KERNEL_IMAGE}" ] \
+        || fail "Cannot read ${SYSTEM_KERNEL_IMAGE} needed by guestfish." \
+        "Set permission with 'sudo chmod +r /boot/vmlinuz-*'."
+done
 
 # source board config file
 [ -r "${BOARDDIR}/config" ] && . "${BOARDDIR}/config"
