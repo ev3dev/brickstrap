@@ -1,6 +1,7 @@
 bash-completion
 console-setup
 conspy
+i2c-tools
 less
 nano
 screen

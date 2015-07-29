@@ -6,6 +6,8 @@ python
 python3
 python-gobject
 python-pyudev
+python-smbus
+python3-smbus
 nodejs
 nodejs-legacy
 npm
