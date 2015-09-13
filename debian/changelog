@@ -1,3 +1,19 @@
+brickstrap (0.3.3) trusty; urgency=medium
+
+  [ David Lechner ]
+  * Check permission of all /boot/vmlinux-*
+  * Add qemu-user to "Built using" in release-notes hooks
+  * [ev3dev-jessie] Add i2c-tools and python-smbus packages
+
+  [ Stefan Sauer ]
+  * Readme.md: fix typos
+
+  [ David Lechner ]
+  * [rpi(2)-ev3dev-jessie] Add i2c-tools and python(3)-smbus packages.
+  * [ev3dev-jessie] Add bluez package to all board definitions.
+
+ -- David Lechner <david@lechnology.com>  Sun, 13 Sep 2015 15:45:21 -0500
+
 brickstrap (0.3.2) trusty; urgency=medium
 
   * [ev3dev-jessie] Replace ev3dev base with new packages
