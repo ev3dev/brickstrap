@@ -3,4 +3,4 @@
 cp $ROOTDIR/usr/lib/linux-image-*/bcm2708-rpi-b-plus.dtb $ROOTDIR/boot/flash/
 
 # Also want the brickpi overlay in the image
-cp $ROOTDIR/usr/lib/linux-image-*/brickpi-overlay.dtb $ROOTDIR/boot/flash/overlays/
+cp $ROOTDIR/usr/lib/linux-image-*/overlays/brickpi-overlay.dtb $ROOTDIR/boot/flash/overlays/
