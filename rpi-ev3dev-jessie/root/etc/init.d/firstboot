@@ -20,6 +20,11 @@ case "$1" in
             ssh-keygen -q -t ${f} -f /etc/ssh/ssh_host_${f}_key -C "" -N ""
         done
 
+        # Fix file ownership (due to PRoot bug/missing feature)
+        # Fix permissions of screen
+        chown root:utmp /usr/bin/screen
+        chmod 2755 /usr/bin/screen
+
         # expand the root file system
         # Note, this will break if using an initramfs
         parted --script /dev/mmcblk0 unit % resizepart 2 100%
