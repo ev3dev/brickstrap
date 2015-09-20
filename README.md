@@ -91,17 +91,17 @@ you can download and install Debian packages and it use QEMU to run foreign
 binaries (like gcc).
 
 
-Board Configuration Files
--------------------------
+Board Configuration Directories
+-------------------------------
 
-Currently, only `*-ev3dev-jessie` are being developed, so use them as a reference.
-There is a `brickstrap-nb` script for creating new board files, but it is not
-maintained, so just copy one of the `*-ev3dev-jessie` directories instead.
+Each directory in this repository represents a board configuration. Any board
+that is not actively maintained should be moved to the `_unmaintained` directory.
+You can create a new board configuration by copying one if the existing ones.
 
 __Note:__ brickstrap will look for a board configuration directory in the current
 working directory and then in the directory where `brickstrap.sh` is located.
 So, if you installed the Debian package and you want to override one of the
-default board configurations, just copy it to your current working directory.
+existing board configurations, just copy it to your current working directory.
 
 ### The `config` file
 
