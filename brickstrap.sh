@@ -179,7 +179,7 @@ ROOTDIR=$(readlink -m ${ROOTDIR:-$DEFAULT_ROOTDIR})
 TARBALL=$(pwd)/$(basename ${ROOTDIR}).tar
 IMAGE=$(pwd)/$(basename ${ROOTDIR}).img
 
-CHROOTCMD="eval proot -r ${ROOTDIR} -v -1 -0"
+CHROOTCMD="eval proot -r ${ROOTDIR} -0"
 QEMU_COMMAND=${QEMU_COMMAND:-qemu-arm}
 CHROOTQEMUCMD="${CHROOTCMD} -q \"${QEMU_COMMAND}\""
 CHROOTQEMUBINDCMD="${CHROOTQEMUCMD} -b /dev -b /sys -b /proc"
