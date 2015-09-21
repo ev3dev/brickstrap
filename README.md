@@ -76,19 +76,25 @@ path to `brickstrap.sh` wherever you saved it.
 This will create a `<name>` folder, a `<name>.tar` and a `<name>.img` file in
 the current directory. `<name>` is determined by the board configuration file.
 
-Additionally, brickstrap provide a `shell` command that lets you chroot into
-the root file system that was created. This lets you make changes manually
-which can then be used to create a new image file like this...
+Additionally, brickstrap provides `shell` and `root-shell` commands that let
+you chroot into the root file system that was created. This lets you make
+changes manually which can then be used to create a new image file like this...
 
-    brickstrap shell -b <board> -d <name>
+    brickstrap root-shell -b <board> -d <name>
     # make some changes
     exit
     brickstrap create-tar -b <board> -d <name>
     brickstrap create-image -b <board> -d <name>
 
 We have also found `brickstrap shell` to be useful as a cross-compiler since
-you can download and install Debian packages and it use QEMU to run foreign
+you can download and install Debian packages and it uses QEMU to run foreign
 binaries (like gcc).
+
+Note that `brickstrap shell` uses `proot -R` that lets you using the user and
+home directory from the host machine inside of the shell. This can have some
+unintended side-effects, so read `proot --help` to understand how this works.
+Furthermore, `sudo` and `su` won't work in `brickstrap shell`, so if you need
+to do anything as root, log in separately with `brickstrap root-shell`.
 
 
 Board Configuration Directories

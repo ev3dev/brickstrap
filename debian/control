@@ -9,7 +9,7 @@ VCS-Browser: https://github.com/ev3dev-dpkg/brickstrap.git
 
 Package: brickstrap
 Architecture: all
-Depends: qemu-user (>= 1.0), multistrap, proot, libguestfs-tools, ${misc:Depends}
+Depends: qemu-user (>= 1.0), multistrap, proot (>= 4.0.1), libguestfs-tools, ${misc:Depends}
 Description: multistrap wrapper to build rootfs for ev3dev
  This package allows one to build a foreign debian rootfs using qemu user mode
  emulation, multistrap and proot without the need of superuser priviliges.

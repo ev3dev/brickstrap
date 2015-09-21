@@ -48,8 +48,8 @@ Options
   run-hooks            run all of the hooks in the board configuration folder
   create-tar           create a tar file from the rootfs folder
   create-image         create a disk image file from the tar file
-
-* shell                run a bash shell in the rootfs using qemu
+* shell                run a bash shell in the rootfs using qemu (see proot -R)
+* root-shell           run a bash shell in the rootfs using qemu
   all                  run all of the above commands (except *) in order
 
   Environment Variables
@@ -179,7 +179,7 @@ ROOTDIR=$(readlink -m ${ROOTDIR:-$DEFAULT_ROOTDIR})
 TARBALL=$(pwd)/$(basename ${ROOTDIR}).tar
 IMAGE=$(pwd)/$(basename ${ROOTDIR}).img
 
-CHROOTCMD="eval proot -r ${ROOTDIR} -0"
+CHROOTCMD="eval proot -r ${ROOTDIR} -0 -w /"
 QEMU_COMMAND=${QEMU_COMMAND:-qemu-arm}
 CHROOTQEMUCMD="${CHROOTCMD} -q \"${QEMU_COMMAND}\""
 CHROOTQEMUBINDCMD="${CHROOTQEMUCMD} -b /dev -b /sys -b /proc"
@@ -357,7 +357,13 @@ function create-image() {
 
 function run-shell() {
     [ ! -d "${ROOTDIR}" ] && fail "${ROOTDIR} does not exist."
-    debian_chroot="brickstrap" PROMPT_COMMAND= HOME=/root ${CHROOTQEMUBINDCMD} bash
+    debian_chroot="brickstrap" PROMPT_COMMAND="" \
+      eval proot -R ${ROOTDIR} -q \"${QEMU_COMMAND}\" bash
+}
+
+function run-root-shell() {
+    [ ! -d "${ROOTDIR}" ] && fail "${ROOTDIR} does not exist."
+    debian_chroot="brickstrap" PROMPT_COMMAND="" HOME=/root ${CHROOTQEMUBINDCMD} bash
 }
 
 case "${cmd}" in
@@ -372,6 +378,7 @@ case "${cmd}" in
     create-image)        create-image;;
 
     shell) run-shell;;
+    root-shell) run-root-shell;;
 
     all) create-conf
          run-multistrap
