@@ -1,6 +1,7 @@
 apt
 conspy
 dosfstools
+ev3dev-adduser-config
 kmod
 ntp
 parted
