@@ -1,4 +1,4 @@
 # Add default user and give them sudo powers
-$CHROOTQEMUCMD adduser --disabled-password --gecos "" robot
-$CHROOTQEMUCMD echo "robot:ev3dev" | chpasswd
+$CHROOTQEMUCMD adduser --disabled-password --gecos \"\" robot
+echo "robot:ev3dev" | $CHROOTQEMUCMD chpasswd
 $CHROOTQEMUCMD usermod -a -G sudo robot
