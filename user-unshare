@@ -84,10 +84,11 @@ use Pod::Usage;
 
 # read the files /etc/subuid and /etc/subgid and return the mapping of user and
 # group ids, respectively for the given username
-sub read_subuid_subgid($) {
-	my $username = shift;
+sub read_subuid_subgid() {
+	my $username = getpwuid $<;
 	my ($subid, $num_subid, $fh, $n);
-	my @result;
+	# map the current user and group id to the root user by default
+	my @result = (["u", 0, $<, 1], ["g", 0, $<, 1]);
 
 	if (-f "/etc/subuid") {
 		open $fh, "<", "/etc/subuid" or die "cannot open /etc/subuid for reading: $!";
@@ -96,7 +97,8 @@ sub read_subuid_subgid($) {
 			last if ($n eq $username);
 		}
 		close $fh;
-		push @result, ["u", 0, $subid, $num_subid];
+		# all other user ids start after root
+		push @result, ["u", 1, $subid, $num_subid];
 	}
 
 	if ( -f "/etc/subgid") {
@@ -106,7 +108,8 @@ sub read_subuid_subgid($) {
 			last if ($n eq $username);
 		}
 		close $fh;
-		push @result, ["g", 0, $subid, $num_subid];
+		# all other group ids start after root
+		push @result, ["g", 1, $subid, $num_subid];
 	}
 
 	return @result;
@@ -162,7 +165,7 @@ my $origgid = $(;
 # new[ug]idmap is called with the exact values from /etc/sub[ug]id,
 # respectively.
 if (scalar @idmap == 0) {
-	@idmap = read_subuid_subgid getpwuid $<;
+	@idmap = read_subuid_subgid;
 }
 
 # Create a pipe for the parent process to signal the child process that it is
