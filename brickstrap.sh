@@ -235,7 +235,7 @@ function run-multistrap() {
         warn "Removing existing rootfs ${ROOTDIR}"
         rm -rf ${ROOTDIR}
     fi
-    proot -0 multistrap ${MSTRAP_SIM} --file "${MULTISTRAPCONF}" --no-auth
+    proot -0 multistrap ${MSTRAP_SIM} --file "${MULTISTRAPCONF}" --dir ${ROOTDIR} --no-auth
 }
 
 function copy-root() {
