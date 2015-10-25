@@ -173,9 +173,9 @@ done
 [ -r "${BOARDDIR}/config" ] && . "${BOARDDIR}/config"
 
 # overwrite target options by commandline options
-MULTISTRAPCONF="multistrap.conf"
 DEFAULT_ROOTDIR=$(readlink -f "$(basename ${BOARDDIR})-$(date +%F)")
 ROOTDIR=$(readlink -m ${ROOTDIR:-$DEFAULT_ROOTDIR})
+MULTISTRAPCONF=$(pwd)/$(basename ${ROOTDIR}).multistrap.conf
 TARBALL=$(pwd)/$(basename ${ROOTDIR}).tar
 IMAGE=$(pwd)/$(basename ${ROOTDIR}).img
 
