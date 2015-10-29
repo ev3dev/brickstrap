@@ -137,6 +137,7 @@ my @idmap;
 my $procmnt = undef;
 my $sysmnt = undef;
 my $devmnt = undef;
+my $rootmnt = undef;
 my $fork;
 
 Getopt::Long::Configure ("bundling");
@@ -158,6 +159,10 @@ GetOptions(
 	"mount-dev:s" => sub {
 		$fork = 1; # mounting dev requires a forked child or otherwise EPERM
 		$devmnt = $_[1] eq "" ? "/dev" : $_[1]; # /dev is the default
+		$unshare_flags |= $CLONE_NEWNS; },        # implicitly enable --mount
+	"mount-host-rootfs:s" => sub {
+		$fork = 1; # mounting dev requires a forked child or otherwise EPERM
+		$rootmnt = $_[1] eq "" ? "/host-rootfs" : $_[1]; # /host-rootfs is the default
 		$unshare_flags |= $CLONE_NEWNS; },        # implicitly enable --mount
 	"f|fork" => \$fork,
 	"M=s"    => sub { # parse -M option and make sure it consists of four parts
@@ -354,6 +359,14 @@ if (defined $devmnt) {
 	}
 }
 
+if (defined $rootmnt) {
+	if ($rootmnt ne "/host-rootfs") {
+		mkdir $rootmnt;
+		0 == syscall &SYS_mount, my $s = "/", $rootmnt, 0,
+			$MS_BIND | $MS_REC, 0 or die "mount failed: $!";
+	}
+}
+
 ## having this variable set could cause programs looking for unreachable
 ## machines # see http://bugs.debian.org/780587
 #delete $ENV{http_proxy};
@@ -440,6 +453,10 @@ Like --mount-proc, but for /sys.
 =item B<--mount-dev>I<[=mountpoint]>
 
 Like --mount-proc, but for /dev.
+
+=item B<--mount-host-rootfs>I<[=mountpoint]>
+
+Like --mount-proc, but for /.
 
 =back
 
