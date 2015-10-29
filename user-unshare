@@ -135,6 +135,7 @@ my $MS_SLAVE      = 0x80000;
 my $unshare_flags = $CLONE_NEWUSER;
 my @idmap;
 my $procmnt = undef;
+my $sysmnt = undef;
 my $fork;
 
 Getopt::Long::Configure ("bundling");
@@ -148,6 +149,10 @@ GetOptions(
 	"mount-proc:s" => sub {
 		$fork = 1; # mounting proc requires a forked child or otherwise EPERM
 		$procmnt = $_[1] eq "" ? "/proc" : $_[1]; # /proc is the default
+		$unshare_flags |= $CLONE_NEWNS; },        # implicitly enable --mount
+	"mount-sys:s" => sub {
+		$fork = 1; # mounting sys requires a forked child or otherwise EPERM
+		$sysmnt = $_[1] eq "" ? "/sys" : $_[1]; # /sys is the default
 		$unshare_flags |= $CLONE_NEWNS; },        # implicitly enable --mount
 	"f|fork" => \$fork,
 	"M=s"    => sub { # parse -M option and make sure it consists of four parts
@@ -323,6 +328,19 @@ if (defined $procmnt) {
 	}
 }
 
+if (defined $sysmnt) {
+	# The "my $s = ..." and "my $t = ..." constructs are necessary because
+	# string literals cannot be passed as arguments to the syscall function.
+	0 == syscall &SYS_mount, my $s1 = "none", my $t1 = "/sys", 0,
+		$MS_PRIVATE | $MS_REC, 0 or die "mount() failed: $!";
+	# Only do a bindmount if sys was required to be mounted elsewhere than
+	# /sys
+	if ($sysmnt ne "/sys") {
+		0 == syscall &SYS_mount, my $s = "/sys", $sysmnt, 0,
+			$MS_BIND | $MS_REC, 0 or die "mount failed: $!";
+	}
+}
+
 ## having this variable set could cause programs looking for unreachable
 ## machines # see http://bugs.debian.org/780587
 #delete $ENV{http_proxy};
@@ -401,6 +419,10 @@ Just before running the program, mount the proc filesystem at I<mountpoint>
 also implies creating a new mount namespace since the /proc mount would
 otherwise  mess  up  existing programs on the system.  The new proc filesystem
 is explicitly mounted as private (by MS_PRIVATE|MS_REC).
+
+=item B<--mount-sys>I<[=mountpoint]>
+
+Like --mount-proc, but for /sys.
 
 =back
 
