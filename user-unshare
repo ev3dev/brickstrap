@@ -136,6 +136,7 @@ my $unshare_flags = $CLONE_NEWUSER;
 my @idmap;
 my $procmnt = undef;
 my $sysmnt = undef;
+my $devmnt = undef;
 my $fork;
 
 Getopt::Long::Configure ("bundling");
@@ -153,6 +154,10 @@ GetOptions(
 	"mount-sys:s" => sub {
 		$fork = 1; # mounting sys requires a forked child or otherwise EPERM
 		$sysmnt = $_[1] eq "" ? "/sys" : $_[1]; # /sys is the default
+		$unshare_flags |= $CLONE_NEWNS; },        # implicitly enable --mount
+	"mount-dev:s" => sub {
+		$fork = 1; # mounting dev requires a forked child or otherwise EPERM
+		$devmnt = $_[1] eq "" ? "/dev" : $_[1]; # /dev is the default
 		$unshare_flags |= $CLONE_NEWNS; },        # implicitly enable --mount
 	"f|fork" => \$fork,
 	"M=s"    => sub { # parse -M option and make sure it consists of four parts
@@ -341,6 +346,14 @@ if (defined $sysmnt) {
 	}
 }
 
+if (defined $devmnt) {
+	# Only do a bindmount if dev was required to be mounted elsewhere than /dev
+	if ($devmnt ne "/dev") {
+		0 == syscall &SYS_mount, my $s = "/dev", $devmnt, 0,
+			$MS_BIND | $MS_REC, 0 or die "mount failed: $!";
+	}
+}
+
 ## having this variable set could cause programs looking for unreachable
 ## machines # see http://bugs.debian.org/780587
 #delete $ENV{http_proxy};
@@ -423,6 +436,10 @@ is explicitly mounted as private (by MS_PRIVATE|MS_REC).
 =item B<--mount-sys>I<[=mountpoint]>
 
 Like --mount-proc, but for /sys.
+
+=item B<--mount-dev>I<[=mountpoint]>
+
+Like --mount-proc, but for /dev.
 
 =back
 
