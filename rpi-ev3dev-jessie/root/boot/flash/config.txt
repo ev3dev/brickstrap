@@ -2,14 +2,33 @@
 # http://www.raspberrypi.org/documentation/configuration/config-txt.md
 # Some settings may impact device functionality. See link above for details
 
-# Dexter Industries BrickPi settings
-init_uart_clock=32000000
-dtoverlay=brickpi
+####################################
+# Dexter Industries BrickPi config #
+####################################
+
+# uncomment if you are using BrickPi or BrickPi+ (uncomment only one dtoverlay)
+#dtoverlay=brickpi
+#dtoverlay=brickpi-plus
+#init_uart_clock=32000000
+
+# uncomment to disable BrickPi LEDs on boot.
+#dtparam=brickpi_led1_trigger=none,brickpi_led2_trigger=none
+
 # uncomment if you have a Model B Rev 1 board that uses gpio 21 instead of
 # gpio 27
 #dtparam=brickpi_led1_gpio=21
-# uncomment to disable BrickPi LEDs on boot.
-#dtparam=brickpi_led1_trigger=none,brickpi_led2_trigger=none
+
+# uncomment if you have a mindsensors.com RTC sensor connected to input port 5
+#dtoverlay=i2c-rtc,ds1307
+
+################################
+# Standard Raspberri Pi config #
+################################
+
+# uncomment if you want to use the camera module
+#start_x=1
+#gpu_mem=128
+#disable_camera_led=1
 
 # uncomment if you get no picture on HDMI for a default "safe" mode
 #hdmi_safe=1

@@ -1,7 +1,8 @@
 #!/bin/bash
 #
-# brickstrap - create a foreign architecture rootfs using multistrap, proot,
-#              and qemu usermode emulation and disk image using libguestfs
+# brickstrap - create a foreign architecture rootfs using kernel namespaces,
+#              multistrap, and qemu usermode emulation and create a disk image
+#              using libguestfs
 #
 # Copyright (C) 2014-2015 David Lechner <david@lechnology.com>
 # Copyright (C) 2014-2015 Ralph Hempel <rhempel@hempeldesigngroup.com>
@@ -48,8 +49,7 @@ Options
   run-hooks            run all of the hooks in the board configuration folder
   create-tar           create a tar file from the rootfs folder
   create-image         create a disk image file from the tar file
-* shell                run a bash shell in the rootfs using qemu (see proot -R)
-* root-shell           run a bash shell in the rootfs using qemu
+* shell                run a bash shell in the rootfs
   all                  run all of the above commands (except *) in order
 
   Environment Variables
@@ -179,10 +179,11 @@ MULTISTRAPCONF=$(pwd)/$(basename ${ROOTDIR}).multistrap.conf
 TARBALL=$(pwd)/$(basename ${ROOTDIR}).tar
 IMAGE=$(pwd)/$(basename ${ROOTDIR}).img
 
-CHROOTCMD="eval proot -r ${ROOTDIR} -0 -w /"
-QEMU_COMMAND=${QEMU_COMMAND:-qemu-arm}
-CHROOTQEMUCMD="${CHROOTCMD} -q \"${QEMU_COMMAND}\""
-CHROOTQEMUBINDCMD="${CHROOTQEMUCMD} -b /dev -b /sys -b /proc"
+QEMU_STATIC=$(which qemu-arm-static)
+USER_UNSHARE="${SCRIPT_PATH}/user-unshare/user-unshare"
+CHROOTCMD="${USER_UNSHARE} --mount-host-rootfs=${ROOTDIR}/host-rootfs -- chroot ${ROOTDIR}"
+CHROOTQEMUCMD="${CHROOTCMD}"
+CHROOTQEMUBINDCMD="${USER_UNSHARE} --mount-proc=${ROOTDIR}/proc --mount-sys=${ROOTDIR}/sys --mount-dev=${ROOTDIR}/dev --mount-host-rootfs=${ROOTDIR}/host-rootfs -- chroot ${ROOTDIR}"
 
 ### Runtime
 #####################################################################
@@ -233,9 +234,10 @@ function run-multistrap() {
     debug "ROOTDIR: ${ROOTDIR}"
     if [ ! -z ${FORCE} ] && [ -d "${ROOTDIR}" ]; then
         warn "Removing existing rootfs ${ROOTDIR}"
-        rm -rf ${ROOTDIR}
+        ${USER_UNSHARE} -- rm -rf ${ROOTDIR}
     fi
-    proot -0 multistrap ${MSTRAP_SIM} --file "${MULTISTRAPCONF}" --dir ${ROOTDIR} --no-auth
+    ${USER_UNSHARE} -- multistrap ${MSTRAP_SIM} --file "${MULTISTRAPCONF}" --dir ${ROOTDIR} --no-auth
+    cp ${QEMU_STATIC} ${ROOTDIR}/usr/bin/
 }
 
 function copy-root() {
@@ -318,7 +320,8 @@ function create-tar() {
     info "Excluding files:
 $(${CHROOTQEMUCMD} cat ${EXCLUDE_LIST})"
     ${CHROOTQEMUCMD} tar cpf /host-rootfs/${TARBALL} \
-        --exclude=host-rootfs --exclude=tar-only --exclude-from=${EXCLUDE_LIST} .
+        --exclude=host-rootfs --exclude=usr/bin/${QEMU_STATIC} --exclude=tar-only \
+        --exclude-from=${EXCLUDE_LIST} .
     if [ -d "${BOARDDIR}/tar-only" ]; then
       cp -r "${BOARDDIR}/tar-only/." "${ROOTDIR}/tar-only/"
     fi
@@ -357,12 +360,6 @@ function create-image() {
 
 function run-shell() {
     [ ! -d "${ROOTDIR}" ] && fail "${ROOTDIR} does not exist."
-    debian_chroot="brickstrap" PROMPT_COMMAND="" \
-      eval proot -R ${ROOTDIR} -q \"${QEMU_COMMAND}\" bash
-}
-
-function run-root-shell() {
-    [ ! -d "${ROOTDIR}" ] && fail "${ROOTDIR} does not exist."
     debian_chroot="brickstrap" PROMPT_COMMAND="" HOME=/root ${CHROOTQEMUBINDCMD} bash
 }
 
@@ -378,7 +375,6 @@ case "${cmd}" in
     create-image)        create-image;;
 
     shell) run-shell;;
-    root-shell) run-root-shell;;
 
     all) create-conf
          run-multistrap

@@ -29,11 +29,6 @@ options g_cdc dev_addr=${dev_addr} host_addr=${host_addr}
 options g_ether dev_addr=${dev_addr} host_addr=${host_addr}
 EOF
 
-        # Fix file ownership (due to PRoot bug/missing feature)
-        # Fix permissions of screen
-        chown root:utmp /usr/bin/screen
-        chmod 2755 /usr/bin/screen
-
         # expand the root file system
         # Note, this will break if using an initramfs
         parted --script /dev/mmcblk0 unit % resizepart 2 100%

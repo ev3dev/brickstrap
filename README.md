@@ -13,15 +13,14 @@ Basically, it automates a stack of other tools to provide and end-to-end
 solution of turning some configuration files into a bootable image all without
 the need for root privileges. The stack of tools consists of:
 
-* [proot]: Provides a chroot environment (relies on [QEMU] for running foreign binaries)
+* [user-unshare]: Handles kernel namespaces and bind mounting host paths.
 * [multistrap]: Bootstraps a Debian system using multiple APT sources.
 * [libguestfs]: Creates the actual disk image.
 
-TODO: Need to figure out the minimum version requirements for these tools.
-
 The name "brickstrap" comes from the fact that it was developed to bootstrap
 the [LEGO MINDSTORMS EV3 Intelligent Brick][mindstorms] as part of the [ev3dev]
-project. Nevertheless, it should work well for other embedded systems too.
+project. Nevertheless, it works well for other embedded systems too. We have
+Rapsberry Pi and soon will have BeagleBone Black configurations as well.
 
 
 Installation
@@ -46,11 +45,15 @@ If you have never used `libguesfs` before, you need to set it up.
     # create a supermin appliance
     sudo update-guestfs-appliance
     # add yourself to the kvm group
-    sudo usermod -a -G kvm <username>
+    sudo usermod -a -G kvm $USER
     newgrp kvm
     # fix permissions on /boot/vmlinuz*
     sudo chmod +r /boot/vmlinuz*
 
+And you need to add yourself to `/etc/subuid` and `/etc/subgid` to be able to
+use uid/gid mapping.
+
+    sudo usermod --add-subuids 200000-209999 --add-subgids 200000-209999 $USER
 
 Usage
 -----
@@ -66,11 +69,11 @@ path to `brickstrap.sh` wherever you saved it.
 This will create a `<name>` folder, a `<name>.tar` and a `<name>.img` file in
 the current directory. `<name>` is determined by the board configuration file.
 
-Additionally, brickstrap provides `shell` and `root-shell` commands that let
+Additionally, brickstrap provides a `shell` command that lets
 you chroot into the root file system that was created. This lets you make
 changes manually which can then be used to create a new image file like this...
 
-    brickstrap root-shell -b <board> -d <name>
+    brickstrap shell -b <board> -d <name>
     # make some changes
     exit
     brickstrap create-tar -b <board> -d <name>
@@ -79,12 +82,6 @@ changes manually which can then be used to create a new image file like this...
 We have also found `brickstrap shell` to be useful as a cross-compiler since
 you can download and install Debian packages and it uses QEMU to run foreign
 binaries (like gcc).
-
-Note that `brickstrap shell` uses `proot -R` that lets you using the user and
-home directory from the host machine inside of the shell. This can have some
-unintended side-effects, so read `proot --help` to understand how this works.
-Furthermore, `sudo` and `su` won't work in `brickstrap shell`, so if you need
-to do anything as root, log in separately with `brickstrap root-shell`.
 
 
 Board Configuration Directories
@@ -106,7 +103,6 @@ variables that are used. It might look something like this...
 
     SUITE="jessie"
     ARCH="armel"
-    QEMU_COMMAND="qemu-arm -cpu arm926"
     MIRROR="http://ftp.debian.org/debian"
     IMAGE_FILE_SIZE="900M"
 
@@ -114,7 +110,6 @@ Most of the variables are just used to generate the `multistrap.conf` file, so
 they are only need if they are used in that file. The variables used by the actual
 brickstrap script are:
 
-*   `QEMU_COMMAND`: Passed to `proot`. Is optional and will default to `qemu-arm`.
 *   `IMAGE_FILE_SIZE`: Passed to `guestfish` to determine the final image size.
 
 It may also be useful to use the pattern:
@@ -131,7 +126,7 @@ in the file will be substituted using the current environment and the `config` f
 
 ### The `debconfseed.txt` file
 
-This file contains a list of package options to set for pacakges. Lines look
+This file contains a list of package options to set for packages. Lines look
 like this:
 
     <package> <package>/<option> select <value>
@@ -212,8 +207,8 @@ directory will overwrite any files in `$ROOTDIR` with the same name.
 
 [polystrap]: https://github.com/josch/polystrap
 [blog]: https://blog.mister-muffin.de/2014/01/11/why-do-i-need-superuser-privileges-when-i-just-want-to-write-to-a-regular-file/
-[proot]: http://proot.me
 [QEMU]: http://wiki.qemu.org/Main_Page
+[user-unshare]: https://blog.mister-muffin.de/2015/10/25/unshare-without-superuser-privileges/
 [multistrap]: https://wiki.debian.org/Multistrap
 [libguestfs]: http://libguestfs.org
 [mindstorms]: http://mindstorms.lego.com

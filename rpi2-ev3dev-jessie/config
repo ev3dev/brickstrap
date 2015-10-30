@@ -1,7 +1,5 @@
 SUITE="jessie"
 ARCH="armhf"
-# RPi 2 is Cortex A7 which is not availible in qemu
-QEMU_COMMAND="qemu-arm -cpu cortex-a8"
 DEBIAN_MIRROR=${DEBIAN_MIRROR:-"http://ftp.debian.org/debian"}
 EV3DEV_MIRROR=${EV3DEV_MIRROR:-"http://ev3dev.org/debian"}
 IMAGE_FILE_SIZE=${IMAGE_FILE_SIZE:-"1800M"}

@@ -2,5 +2,5 @@
 # and this image needs to support both models.
 cp $ROOTDIR/usr/lib/linux-image-*/bcm2708-rpi-b-plus.dtb $ROOTDIR/boot/flash/
 
-# Also want the brickpi overlay in the image
-cp $ROOTDIR/usr/lib/linux-image-*/overlays/brickpi-overlay.dtb $ROOTDIR/boot/flash/overlays/
+# Also want the overlays to the boot partition
+cp $ROOTDIR/usr/lib/linux-image-*/overlays/* $ROOTDIR/boot/flash/overlays/
