@@ -320,7 +320,7 @@ function create-tar() {
     info "Excluding files:
 $(${CHROOTQEMUCMD} cat ${EXCLUDE_LIST})"
     ${CHROOTQEMUCMD} tar cpf /host-rootfs/${TARBALL} \
-        --exclude=host-rootfs --exclude=usr/bin/${QEMU_STATIC} --exclude=tar-only \
+        --exclude=host-rootfs --exclude=usr/bin/$(basename ${QEMU_STATIC}) --exclude=tar-only \
         --exclude-from=${EXCLUDE_LIST} .
     if [ -d "${BOARDDIR}/tar-only" ]; then
       cp -r "${BOARDDIR}/tar-only/." "${ROOTDIR}/tar-only/"
