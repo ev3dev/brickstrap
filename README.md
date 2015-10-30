@@ -205,7 +205,7 @@ directory will overwrite any files in `$ROOTDIR` with the same name.
 
 
 
-[polystrap]: https://github.com/josch/polystrap
+[polystrap]: https://gitlab.mister-muffin.de/josch/polystrap
 [blog]: https://blog.mister-muffin.de/2014/01/11/why-do-i-need-superuser-privileges-when-i-just-want-to-write-to-a-regular-file/
 [QEMU]: http://wiki.qemu.org/Main_Page
 [user-unshare]: https://blog.mister-muffin.de/2015/10/25/unshare-without-superuser-privileges/
