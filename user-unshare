@@ -149,19 +149,15 @@ GetOptions(
 	"p|pid"    => sub { $unshare_flags |= $CLONE_NEWPID },
 	"u|uts"    => sub { $unshare_flags |= $CLONE_NEWUTS },
 	"mount-proc:s" => sub {
-		$fork = 1; # mounting proc requires a forked child or otherwise EPERM
 		$procmnt = $_[1] eq "" ? "/proc" : $_[1]; # /proc is the default
 		$unshare_flags |= $CLONE_NEWNS; },        # implicitly enable --mount
 	"mount-sys:s" => sub {
-		$fork = 1; # mounting sys requires a forked child or otherwise EPERM
 		$sysmnt = $_[1] eq "" ? "/sys" : $_[1]; # /sys is the default
 		$unshare_flags |= $CLONE_NEWNS; },        # implicitly enable --mount
 	"mount-dev:s" => sub {
-		$fork = 1; # mounting dev requires a forked child or otherwise EPERM
 		$devmnt = $_[1] eq "" ? "/dev" : $_[1]; # /dev is the default
 		$unshare_flags |= $CLONE_NEWNS; },        # implicitly enable --mount
 	"mount-host-rootfs:s" => sub {
-		$fork = 1; # mounting dev requires a forked child or otherwise EPERM
 		$rootmnt = $_[1] eq "" ? "/host-rootfs" : $_[1]; # /host-rootfs is the default
 		$unshare_flags |= $CLONE_NEWNS; },        # implicitly enable --mount
 	"f|fork" => \$fork,
@@ -327,9 +323,6 @@ if (defined $procmnt) {
 	# string literals cannot be passed as arguments to the syscall function.
 	0 == syscall &SYS_mount, my $s1 = "none", my $t1 = "/proc", 0,
 		$MS_PRIVATE | $MS_REC, 0 or die "mount() failed: $!";
-	# FIXME: The following line will fail if --fork wasn't passed. Why???
-	0 == syscall &SYS_mount, my $s2 = "proc", my $t2 = "/proc", my $t = "proc",
-		$MS_NOSUID|$MS_NOEXEC|$MS_NODEV, 0 or die "mount() failed: $!";
 	# Only do a bindmount if proc was required to be mounted elsewhere than
 	# /proc
 	if ($procmnt ne "/proc") {
