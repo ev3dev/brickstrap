@@ -1,16 +1,16 @@
 # make sure serial-getty@.service does not try to use the serial ports because
 # we use them for other things
-$CHROOTQEMUBINDCMD systemctl mask serial-getty@ttyS0.service
-$CHROOTQEMUBINDCMD systemctl mask serial-getty@ttyS1.service
-$CHROOTQEMUBINDCMD systemctl mask serial-getty@ttyS2.service
-$CHROOTQEMUBINDCMD systemctl mask serial-getty@ttySU0.service
-$CHROOTQEMUBINDCMD systemctl mask serial-getty@ttySU1.service
+$CHROOTBINDCMD systemctl mask serial-getty@ttyS0.service
+$CHROOTBINDCMD systemctl mask serial-getty@ttyS1.service
+$CHROOTBINDCMD systemctl mask serial-getty@ttyS2.service
+$CHROOTBINDCMD systemctl mask serial-getty@ttySU0.service
+$CHROOTBINDCMD systemctl mask serial-getty@ttySU1.service
 
 # disable nfs from running by default since most won't use it
-$CHROOTQEMUBINDCMD systemctl disable nfs-common.service
-$CHROOTQEMUBINDCMD systemctl disable rpcbind.service
+$CHROOTBINDCMD systemctl disable nfs-common.service
+$CHROOTBINDCMD systemctl disable rpcbind.service
 
 # disable smbd from running by default. Want to leave nmbd on though.
-$CHROOTQEMUBINDCMD systemctl disable smbd.service
+$CHROOTBINDCMD systemctl disable smbd.service
 # we really don't want this running - it causes a long timeout on boot
-$CHROOTQEMUBINDCMD systemctl mask samba-ad-dc.service
+$CHROOTBINDCMD systemctl mask samba-ad-dc.service

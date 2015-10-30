@@ -182,8 +182,7 @@ IMAGE=$(pwd)/$(basename ${ROOTDIR}).img
 QEMU_STATIC=$(which qemu-arm-static)
 USER_UNSHARE="${SCRIPT_PATH}/user-unshare/user-unshare"
 CHROOTCMD="${USER_UNSHARE} --mount-host-rootfs=${ROOTDIR}/host-rootfs -- chroot ${ROOTDIR}"
-CHROOTQEMUCMD="${CHROOTCMD}"
-CHROOTQEMUBINDCMD="${USER_UNSHARE} --mount-proc=${ROOTDIR}/proc --mount-sys=${ROOTDIR}/sys --mount-dev=${ROOTDIR}/dev --mount-host-rootfs=${ROOTDIR}/host-rootfs -- chroot ${ROOTDIR}"
+CHROOTBINDCMD="${USER_UNSHARE} --mount-proc=${ROOTDIR}/proc --mount-sys=${ROOTDIR}/sys --mount-dev=${ROOTDIR}/dev --mount-host-rootfs=${ROOTDIR}/host-rootfs -- chroot ${ROOTDIR}"
 
 ### Runtime
 #####################################################################
@@ -259,7 +258,7 @@ function configure-packages () {
     info "preseed debconf"
     if [ -r "${BOARDDIR}/debconfseed.txt" ]; then
         cp "${BOARDDIR}/debconfseed.txt" "${ROOTDIR}/tmp/"
-        ${CHROOTQEMUCMD} debconf-set-selections /tmp/debconfseed.txt
+        ${CHROOTCMD} debconf-set-selections /tmp/debconfseed.txt
         rm "${ROOTDIR}/tmp/debconfseed.txt"
     fi
 
@@ -281,13 +280,13 @@ function configure-packages () {
         info "running ${script##$script_dir}"
         DPKG_MAINTSCRIPT_NAME=preinst \
         DPKG_MAINTSCRIPT_PACKAGE="`basename ${script} .preinst`" \
-            ${CHROOTQEMUBINDCMD} ${script##$ROOTDIR} install
+            ${CHROOTBINDCMD} ${script##$ROOTDIR} install
     done
 
     # run dpkg `--configure -a` twice because of errors during the first run
     info "configuring packages..."
-    ${CHROOTQEMUBINDCMD} /usr/bin/dpkg --configure -a || \
-    ${CHROOTQEMUBINDCMD} /usr/bin/dpkg --configure -a || true
+    ${CHROOTBINDCMD} /usr/bin/dpkg --configure -a || \
+    ${CHROOTBINDCMD} /usr/bin/dpkg --configure -a || true
 }
 
 function run-hook() {
@@ -318,8 +317,8 @@ function create-tar() {
     info "creating tarball ${TARBALL}"
     EXCLUDE_LIST=/host-rootfs/${BOARDDIR}/tar-exclude
     info "Excluding files:
-$(${CHROOTQEMUCMD} cat ${EXCLUDE_LIST})"
-    ${CHROOTQEMUCMD} tar cpf /host-rootfs/${TARBALL} \
+$(${CHROOTCMD} cat ${EXCLUDE_LIST})"
+    ${CHROOTCMD} tar cpf /host-rootfs/${TARBALL} \
         --exclude=host-rootfs --exclude=usr/bin/$(basename ${QEMU_STATIC}) --exclude=tar-only \
         --exclude-from=${EXCLUDE_LIST} .
     if [ -d "${BOARDDIR}/tar-only" ]; then
@@ -327,7 +326,7 @@ $(${CHROOTQEMUCMD} cat ${EXCLUDE_LIST})"
     fi
     if [ -d "${ROOTDIR}/tar-only" ]; then
       info "Adding tar-only files:"
-      ${CHROOTQEMUCMD} tar rvpf /host-rootfs/${TARBALL} -C /tar-only .
+      ${CHROOTCMD} tar rvpf /host-rootfs/${TARBALL} -C /tar-only .
     fi
 }
 
@@ -360,7 +359,7 @@ function create-image() {
 
 function run-shell() {
     [ ! -d "${ROOTDIR}" ] && fail "${ROOTDIR} does not exist."
-    debian_chroot="brickstrap" PROMPT_COMMAND="" HOME=/root ${CHROOTQEMUBINDCMD} bash
+    debian_chroot="brickstrap" PROMPT_COMMAND="" HOME=/root ${CHROOTBINDCMD} bash
 }
 
 case "${cmd}" in

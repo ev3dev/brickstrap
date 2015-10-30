@@ -46,4 +46,4 @@ echo "/dev/mapper/ev3devVG-swap none            swap   sw                       
 __END__
 
 chmod +x $ROOTDIR/etc/init.d/firstboot
-$CHROOTQEMUCMD update-rc.d firstboot start 99 S
+$CHROOTCMD update-rc.d firstboot start 99 S

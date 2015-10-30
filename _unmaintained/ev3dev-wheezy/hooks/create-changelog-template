@@ -21,6 +21,6 @@ Included Packages
 -----------------
 
 \`\`\`
-$($CHROOTQEMUCMD dpkg -l)
+$($CHROOTCMD dpkg -l)
 \`\`\`
 EOF

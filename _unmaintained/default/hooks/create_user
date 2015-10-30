@@ -1,2 +1,2 @@
-$CHROOTQEMUCMD useradd user -p `openssl passwd -crypt -salt // ""` -s /bin/bash --create-home
-$CHROOTQEMUCMD usermod -a -G audio,dialout user
+$CHROOTCMD useradd user -p `openssl passwd -crypt -salt // ""` -s /bin/bash --create-home
+$CHROOTCMD usermod -a -G audio,dialout user
