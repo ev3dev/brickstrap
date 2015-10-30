@@ -53,7 +53,7 @@ If you have never used `libguesfs` before, you need to set it up.
 And you need to add yourself to `/etc/subuid` and `/etc/subgid` to be able to
 use uid/gid mapping.
 
-    sudo usermod --add-subuids 200000-209999 --add-subgids 200000-209999 $USER
+    sudo usermod --add-subuids 200000-265534 --add-subgids 200000-265534 $USER
 
 Usage
 -----
