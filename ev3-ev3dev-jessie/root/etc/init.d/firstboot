@@ -6,7 +6,7 @@
 # Required-Stop:
 # Default-Start: S
 # Default-Stop:
-# X-Start-Before: ssh cdc-gadget rndis-gadget brickman
+# X-Start-Before: ssh brickman
 # Short-Description: ev3dev first boot tasks
 ### END INIT INFO
 
@@ -19,15 +19,6 @@ case "$1" in
             echo "generating ssh ${f} key..."
             ssh-keygen -q -t ${f} -f /etc/ssh/ssh_host_${f}_key -C "" -N ""
         done
-
-        # set static mac address for usb networking
-        eeprom_addr=$(hexdump -e '5/1 "%02X:" "%02X"' -s 0x3f06 -n 6 < /sys/bus/i2c/drivers/at24/1-0050/eeprom)
-        dev_addr=$(echo ${eeprom_addr} | sed s/^00/02/)
-        host_addr=$(echo ${eeprom_addr} | sed s/^00/12/)
-        cat > /etc/modprobe.d/usb-net.conf << EOF
-options g_cdc dev_addr=${dev_addr} host_addr=${host_addr}
-options g_ether dev_addr=${dev_addr} host_addr=${host_addr}
-EOF
 
         # expand the root file system
         # Note, this will break if using an initramfs
