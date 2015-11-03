@@ -2,6 +2,16 @@
 # http://www.raspberrypi.org/documentation/configuration/config-txt.md
 # Some settings may impact device functionality. See link above for details
 
+###################################
+# mindsensors.com PiStorms config #
+###################################
+
+# uncomment if you are using PiStorms
+#dtoverlay=pistorms
+
+# uncomment to invert the display
+#dtparam=rotate=270
+
 ####################################
 # Dexter Industries BrickPi config #
 ####################################
