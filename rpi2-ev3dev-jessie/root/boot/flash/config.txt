@@ -16,10 +16,12 @@
 # Dexter Industries BrickPi config #
 ####################################
 
-# uncomment if you are using BrickPi or BrickPi+ (uncomment only one dtoverlay)
+# uncomment both if you are using BrickPi
 #dtoverlay=brickpi
-#dtoverlay=brickpi-plus
 #init_uart_clock=32000000
+
+# uncomment only if you are using BrickPi+
+#dtparam=brickpi_battery=okay
 
 # uncomment to disable BrickPi LEDs on boot.
 #dtparam=brickpi_led1_trigger=none,brickpi_led2_trigger=none
