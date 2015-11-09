@@ -29,7 +29,7 @@ Installation
 Since brickstrap is essentially just a bash script, you can run directly from
 the source code.
 
-    git clone git://github.com/ev3dev/brickstrap --recursive
+    git clone git://github.com/ev3dev/brickstrap
     brickstrap/brickstrap.sh all
 
 There is also a Debian package available for Ubuntu trusty in the ev3dev package

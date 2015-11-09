@@ -180,7 +180,7 @@ TARBALL=$(pwd)/$(basename ${ROOTDIR}).tar
 IMAGE=$(pwd)/$(basename ${ROOTDIR}).img
 
 QEMU_STATIC=$(which qemu-arm-static)
-USER_UNSHARE="${SCRIPT_PATH}/user-unshare/user-unshare"
+USER_UNSHARE="${SCRIPT_PATH}/user-unshare"
 CHROOTCMD="${USER_UNSHARE} --mount-host-rootfs=${ROOTDIR}/host-rootfs -- chroot ${ROOTDIR}"
 CHROOTBINDCMD="${USER_UNSHARE} --mount-proc=${ROOTDIR}/proc --mount-sys=${ROOTDIR}/sys --mount-dev=${ROOTDIR}/dev --mount-host-rootfs=${ROOTDIR}/host-rootfs -- chroot ${ROOTDIR}"
 
