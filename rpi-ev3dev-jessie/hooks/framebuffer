@@ -1,0 +1,11 @@
+# Set the FRAMEBUFFER environment variable.
+
+# PiStorms and other add-on displays are generally at /dev/fb1
+
+# This one is so that users will inherit this variable.
+echo "FRAMEBUFFER=/dev/fb1" >> $ROOTDIR/etc/environment
+
+# And this one is for systemd since it doesn't look at /etc/environment
+# This would be better in /etc/systemd/system.conf.d/, but that was not introduced
+# until systemd 218 and jessie uses 215.
+sed -i 's,#\(DefaultEnvironment=\),\1FRAMEBUFFER=/dev/fb1,' $ROOTDIR/etc/systemd/system.conf
