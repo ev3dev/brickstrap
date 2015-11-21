@@ -10,3 +10,4 @@ locales
 systemd-sysv
 u-boot-tools
 udev
+zram-init

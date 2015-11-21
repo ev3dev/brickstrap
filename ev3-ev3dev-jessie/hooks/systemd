@@ -14,3 +14,6 @@ $CHROOTBINDCMD systemctl disable rpcbind.service
 $CHROOTBINDCMD systemctl disable smbd.service
 # we really don't want this running - it causes a long timeout on boot
 $CHROOTBINDCMD systemctl mask samba-ad-dc.service
+
+# enable zram swap file
+$CHROOTBINDCMD systemctl enable zram_swap.service
