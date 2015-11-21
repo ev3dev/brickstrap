@@ -36,7 +36,7 @@ There is also a Debian package available for Ubuntu trusty in the ev3dev package
 repository.
 
     sudo apt-key adv --keyserver pgp.mit.edu --recv-keys 2B210565
-    sudo apt-add-repository http://ev3dev.org/debian
+    sudo apt-add-repository "deb http://ev3dev.org/debian trusty main"
     sudo apt-get update
     sudo apt-get install brickstrap
 
