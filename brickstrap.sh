@@ -51,6 +51,7 @@ Options
   create-tar           create a tar file from the rootfs folder
   create-image         create a disk image file from the tar file
 * shell                run a bash shell in the rootfs
+* delete               deletes all of the files created by other commands
   all                  run all of the above commands (except *) in order
 
   Environment Variables
@@ -365,6 +366,15 @@ function create-image() {
     mv test1.img ${IMAGE}
 }
 
+function delete-all() {
+    info "Deleting all files..."
+    ${USER_UNSHARE} -- rm -rf ${ROOTDIR}
+    rm -f ${MULTISTRAPCONF}
+    rm -f ${TARBALL}
+    rm -f ${IMAGE}
+    info "Done."
+}
+
 function run-shell() {
     [ ! -d "${ROOTDIR}" ] && fail "${ROOTDIR} does not exist."
     debian_chroot="brickstrap" PROMPT_COMMAND="" HOME=/root ${CHROOTBINDCMD} bash
@@ -381,6 +391,7 @@ case "${cmd}" in
     create-rootfs)       create-rootfs;;
     create-tar)          create-tar;;
     create-image)        create-image;;
+    delete)              delete-all;;
 
     shell) run-shell;;
 
