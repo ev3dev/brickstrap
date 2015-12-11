@@ -47,6 +47,7 @@ Options
   configure-packages   configure the packages in the rootfs
 * run-hook <hook>      run a single hook in the board configuration folder
   run-hooks            run all of the hooks in the board configuration folder
+* create-rootfs        run all of the above commands (except *) in order
   create-tar           create a tar file from the rootfs folder
   create-image         create a disk image file from the tar file
 * shell                run a bash shell in the rootfs
@@ -330,6 +331,13 @@ $(${CHROOTCMD} cat ${EXCLUDE_LIST})"
     fi
 }
 
+function create-rootfs () {
+    create-conf
+    run-multistrap
+    copy-root
+    configure-packages
+    run-hooks
+}
 
 function create-image() {
     info "Creating image file..."
@@ -370,18 +378,16 @@ case "${cmd}" in
     configure-packages)  configure-packages;;
     run-hook)            run-hook ${BOARDDIR}/hooks/${run_hook_arg};;
     run-hooks)           run-hooks;;
+    create-rootfs)       create-rootfs;;
     create-tar)          create-tar;;
     create-image)        create-image;;
 
     shell) run-shell;;
 
-    all) create-conf
-         run-multistrap
-         copy-root
-         configure-packages
-         run-hooks
-         create-tar
-         create-image
+    all)
+        create-rootfs
+        create-tar
+        create-image
     ;;
 
     *) fail "Unknown command. See brickstrap -h for list of commands.";;
