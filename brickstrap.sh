@@ -254,6 +254,12 @@ function configure-packages () {
     info "Configuring packages..."
     [ ! -d "${ROOTDIR}" ] && fail "${ROOTDIR} does not exist."
 
+    # awk needs to be in the path, but Debian symlinks are not
+    # configured yet, so make a temporary one in /usr/local/bin.
+    info "Creating awk temporary symlink"
+    ${CHROOTCMD} mkdir -p /usr/local/bin
+    ${CHROOTCMD} ln -sf /usr/bin/gawk /usr/local/bin/awk
+
     # preseed debconf
     info "preseed debconf"
     if [ -r "${BOARDDIR}/debconfseed.txt" ]; then
@@ -287,6 +293,10 @@ function configure-packages () {
     info "configuring packages..."
     ${CHROOTBINDCMD} /usr/bin/dpkg --configure -a || \
     ${CHROOTBINDCMD} /usr/bin/dpkg --configure -a || true
+
+    # remove our temporary awk symlink as it is no longer required.
+    info "Removing awk temporary symlink"
+    ${CHROOTCMD} rm -f /usr/local/bin/awk
 }
 
 function run-hook() {
@@ -340,6 +350,13 @@ function create-image() {
     [ -z ${FORCE} ] && [ -f ${IMAGE} ] && \
         fail "${IMAGE} already exists. Use -f option to overwrite."
 
+    # create a disk image with MBR partition table and 2 partitions.
+    # ---------------------------------------------
+    #   part | type   | fs   | size
+    # ---------------------------------------------
+    #      1 | boot   | VFAT | 48MB
+    #      2 | rootfs | ext4 | ${IMAGE_FILE_SIZE}
+    # ---------------------------------------------
     guestfish -N bootroot:vfat:ext4:${IMAGE_FILE_SIZE}:48M:mbr \
          part-set-mbr-id /dev/sda 1 0x0b : \
          set-label /dev/sda2 EV3_FILESYS : \
