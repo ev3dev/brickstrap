@@ -1,0 +1,489 @@
+#!/usr/bin/perl
+#
+# Copyright: 2015 Johannes Schauer <josch@mister-muffin.de>
+# Copyright: 2015 David Lechner <david@lechnology.com>
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to
+# deal in the Software without restriction, including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+# sell copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+#
+# This tool tries to be like unshare(1) but with the power of lxc-usernsexec(1)
+# to map more than one id into the new user namespace by using the programs
+# newgidmap and newuidmap. Or in other words: This tool tries to be like
+# lxc-usernsexec(1) but with the power of unshare(1) to unshare more than just
+# the user and mount namespaces.
+#
+# I arbitrarily called it user-unshare because it's like unshare(1) but
+# doesn't require root (except for the suid root new[ug]idmap programs).
+#
+# It is essentially equal to calling:
+#
+#  $ lxc-usernsexec [opts] -- unshare [opts] -- COMMAND
+#
+# Its main points of existence are:
+#
+#  - as a project for me to learn how unprivileged namespaces work
+#  - written in Perl which means:
+#       - architecture independent (same executable on any architecture)
+#       - easily inspectable by other curious minds
+#  - tons of code comments to let others understand how things work
+#  - no need to install the lxc package in a minimal environment (perl itself
+#    might not be called minimal either but is present in every Debian
+#    installation)
+#
+# Further differences to unshare(1):
+#
+#  - No --setgroups and --map-root-user options. These were only useful when
+#    not more than a single uid and gid was available inside the user
+#    namespace
+#  - CLONE_NEWUSER is always enabled (so there is no --user option)
+#  - persistent namespaces to be used with nsenter cannot be supported because
+#    they require that you have permissions to do `mount --bind` in the host
+#    namespace which requires root privileges
+#  - the --mount-proc=XXX option actually works with XXX being other
+#    directories than /proc
+#  - you are immediately root in the new user namespace and can then switch to
+#    another user with runuser(1) if you so wish
+#
+# Further differences to lxc-usernsexec(1):
+#
+#  - there is no parent that is just waiting for the child to exit and
+#    otherwise wasting pid space (unless you request --fork)
+#  - requires only one pipe instead of two for IPC
+#  - the -m option is now uppercase -M because -m was already the short option
+#    for --mount in unshare(1)
+#
+# How it differs from other tools:
+#
+#  - systemd-nspawn requires to be executed by root and this does not seem
+#    likely to change any time soon:
+#    http://lists.freedesktop.org/archives/systemd-devel/2015-February/028139.html
+#  - linux-user-chroot cheats by being suid root
+#
+#
+# Debian kernels carry a patch named
+# add-sysctl-to-disallow-unprivileged-CLONE_NEWUSER-by-default.patch
+# which disables unprivileged usernamespaces by default, to enable it do:
+#  $ echo 1 | sudo tee /proc/sys/kernel/unprivileged_userns_clone > /dev/null
+# or
+#  $ sysctl -w kernel.unprivileged_userns_clone=1
+
+use warnings;
+use strict;
+
+require 'syscall.ph';
+
+use Getopt::Long;
+use Pod::Usage;
+
+# read the files /etc/subuid and /etc/subgid and return the mapping of user and
+# group ids, respectively for the given username
+sub read_subuid_subgid() {
+	my $username = getpwuid $<;
+	my ($subid, $num_subid, $fh, $n);
+	# map the current user and group id to the root user by default
+	my @result = (["u", 0, $<, 1], ["g", 0, $<, 1]);
+
+	if (-f "/etc/subuid") {
+		open $fh, "<", "/etc/subuid" or die "cannot open /etc/subuid for reading: $!";
+		while (my $line = <$fh>) {
+			($n, $subid, $num_subid) = split(/:/, $line, 3);
+			last if ($n eq $username);
+		}
+		close $fh;
+		# all other user ids start after root
+		push @result, ["u", 1, $subid, $num_subid];
+	}
+
+	if ( -f "/etc/subgid") {
+		open $fh, "<", "/etc/subgid" or die "cannot open /etc/subgid for reading: $!";
+		while (my $line = <$fh>) {
+			($n, $subid, $num_subid) = split(/:/, $line, 3);
+			last if ($n eq $username);
+		}
+		close $fh;
+		# all other group ids start after root
+		push @result, ["g", 1, $subid, $num_subid];
+	}
+
+	return @result;
+}
+
+# FIXME: get rid of these constants
+# from sched.h
+my $CLONE_NEWNS   = 0x20000;
+my $CLONE_NEWUTS  = 0x4000000;
+my $CLONE_NEWIPC  = 0x8000000;
+my $CLONE_NEWUSER = 0x10000000;
+my $CLONE_NEWPID  = 0x20000000;
+my $CLONE_NEWNET  = 0x40000000;
+# from sys/mount.h
+my $MS_NOSUID     = 0x2;
+my $MS_NODEV      = 0x4;
+my $MS_NOEXEC     = 0x8;
+my $MS_BIND       = 0x1000;
+my $MS_REC        = 0x4000;
+my $MS_PRIVATE    = 0x40000;
+my $MS_SLAVE      = 0x80000;
+
+my $unshare_flags = $CLONE_NEWUSER;
+my @idmap;
+my $procmnt = undef;
+my $sysmnt = undef;
+my $devmnt = undef;
+my $rootmnt = undef;
+my $fork;
+
+Getopt::Long::Configure ("bundling");
+GetOptions(
+	'h|help'   => sub { pod2usage(-exitval => 0, -verbose => 2) },
+	"i|ipc"    => sub { $unshare_flags |= $CLONE_NEWIPC },
+	"m|mount"  => sub { $unshare_flags |= $CLONE_NEWNS },
+	"n|net"    => sub { $unshare_flags |= $CLONE_NEWNET },
+	"p|pid"    => sub { $unshare_flags |= $CLONE_NEWPID },
+	"u|uts"    => sub { $unshare_flags |= $CLONE_NEWUTS },
+	"mount-proc:s" => sub {
+		$procmnt = $_[1] eq "" ? "/proc" : $_[1]; # /proc is the default
+		$unshare_flags |= $CLONE_NEWNS; },        # implicitly enable --mount
+	"mount-sys:s" => sub {
+		$sysmnt = $_[1] eq "" ? "/sys" : $_[1]; # /sys is the default
+		$unshare_flags |= $CLONE_NEWNS; },        # implicitly enable --mount
+	"mount-dev:s" => sub {
+		$devmnt = $_[1] eq "" ? "/dev" : $_[1]; # /dev is the default
+		$unshare_flags |= $CLONE_NEWNS; },        # implicitly enable --mount
+	"mount-host-rootfs:s" => sub {
+		$rootmnt = $_[1] eq "" ? "/host-rootfs" : $_[1]; # /host-rootfs is the default
+		$unshare_flags |= $CLONE_NEWNS; },        # implicitly enable --mount
+	"f|fork" => \$fork,
+	"M=s"    => sub { # parse -M option and make sure it consists of four parts
+		my @v = split /:/, $_[1], 4;
+		die "invalid format for -m option" if scalar @v != 4;
+		push @idmap, \@v },
+) or pod2usage(-exitval => 2, -verbose => 1);
+
+my $origuid = $<;
+my $origgid = $(;
+
+# If the -M option was not given, read /etc/sub[ug]id to get the right
+# sub[ug]ids for the new[gu]idmap calls later by the child process.
+#
+# new[ug]idmap is called with the exact values from /etc/sub[ug]id,
+# respectively.
+if (scalar @idmap == 0) {
+	@idmap = read_subuid_subgid;
+}
+
+# Create a pipe for the parent process to signal the child process that it is
+# done with calling unshare() so that the child can go ahead setting up
+# uid_map and gid_map.
+pipe my $rfh, my $wfh;
+
+# We have to do this dance with forking a process and then modifying the
+# parent from the child because:
+#  - new[ug]idmap can only be called on a process id after that process has
+#    unshared the user namespace
+#  - a process looses its capabilities if it performs an execve() with nonzero
+#    user ids see the capabilities(7) man page for details.
+#  - a process that unshared the user namespace by default does not have the
+#    privileges to call new[ug]idmap on itself
+#
+# this also works the other way around (the child setting up a user namespace
+# and being modified from the parent) but that way, the parent would have to
+# stay around until the child exited (so a pid would be wasted). Additionally,
+# that variant would require an additional pipe to let the parent signal the
+# child that it is done with calling new[ug]idmap. The way it is done here,
+# this signaling can instead be done by wait()-ing for the exit of the child.
+my $ppid = $$;
+my $cpid = fork() // die "fork() failed: $!";
+if ($cpid == 0) {
+	# child
+
+	# Close the writing descriptor at our end of the pipe so that we see EOF
+	# when parent closes its descriptor.
+	close $wfh;
+
+	# Wait for the parent process to finish its unshare() call by waiting for
+	# an EOF.
+	0 == sysread $rfh, my $c, 1 or die "read() did not receive EOF";
+
+	# The program's new[ug]idmap have to be used because they are setuid root.
+	# These privileges are needed to map the ids from /etc/sub[ug]id to the
+	# user namespace set up by the parent. Without these privileges, only the
+	# id of the user itself can be mapped into the new namespace.
+	#
+	# Since new[ug]idmap is setuid root we also don't need to write "deny" to
+	# /proc/$$/setgroups beforehand (this is otherwise required for
+	# unprivileged processes trying to write to /proc/$$/gid_map since kernel
+	# version 3.19 for security reasons) and therefore the parent process
+	# keeps its ability to change its own group here.
+	#
+	# Since /proc/$ppid/[ug]id_map can only be written to once, respectively,
+	# instead of making multiple calls to new[ug]idmap, we assemble a command
+	# line that makes one call each.
+	my $uidmapcmd = "";
+	my $gidmapcmd = "";
+	foreach (@idmap) {
+		my ($t, $hostid, $nsid, $range) = @{$_};
+		if ($t ne "u" and $t ne "g" and $t ne "b") {
+			die "invalid idmap type: $t";
+		}
+		if ($t eq "u" or $t eq "b") {
+			$uidmapcmd .= " $hostid $nsid $range";
+		}
+		if ($t eq "g" or $t eq "b") {
+			$gidmapcmd .= " $hostid $nsid $range";
+		}
+	}
+	if ($uidmapcmd ne "") {
+		0 == system "newuidmap $ppid $uidmapcmd" or die "newuidmap failed: $!";
+	}
+	if ($gidmapcmd ne "") {
+		0 == system "newgidmap $ppid $gidmapcmd" or die "newgidmap failed: $!";
+	}
+	exit 0;
+}
+
+# parent
+
+# After fork()-ing, the parent immediately calls unshare...
+0 == syscall &SYS_unshare, $unshare_flags or die "unshare() failed: $!";
+
+# .. and then signals the child process that we are done with the unshare()
+# call by sending an EOF.
+close $wfh;
+
+# Wait for the child process to finish its setup by waiting for its exit.
+$cpid == waitpid $cpid, 0 or die "waitpid() failed: $!";
+if ($? != 0) {
+	die "child had a non-zero exit status: $?";
+}
+
+# Currently we are nobody (uid and gid are 65534). So we become root user and
+# group instead.
+#
+# We are using direct syscalls instead of setting $(, $), $< and $> because
+# then perl would do additional stuff which we don't need or want here, like
+# checking /proc/sys/kernel/ngroups_max (which might not exist). It would also
+# also call setgroups() in a way that makes the root user be part of the
+# group unknown.
+0 == syscall &SYS_setgid, 0 or die "setgid failed: $!";
+0 == syscall &SYS_setuid, 0 or die "setuid failed: $!";
+0 == syscall &SYS_setgroups, 0, 0 or die "setgroups failed: $!";
+
+# At this point lxc-usernsexec is checking whether / is mounted MS_SHARED and
+# if yes, will mount / as MS_SLAVE|MS_REC - not sure why we have to do this
+# and it seems to work without so we don't do it.
+#0 == syscall &SYS_mount, 0, my $t = "/", 0, $MS_SLAVE | $MS_REC, 0 or die "mount() failed: $!";
+
+# When the pid namespace is also unshared, then processes expect a master pid
+# to always be alive within the namespace. To achieve this, we fork() here
+# instead of exec() to always have one dummy process running as pid 1 inside
+# the namespace. This is also what the unshare tool does when used with the
+# --fork option.
+#
+# Otherwise, without a pid 1, new processes cannot be forked anymore after pid
+# 1 finished.
+if ($fork) {
+	my $cpid = fork() // die "fork() failed: $!";
+	if ($cpid != 0) {
+		# parent
+
+		# The parent process will stay alive as pid 1 in this namespace until
+		# the child finishes executing. This is important because pid 1 must
+		# never die or otherwise nothing new can be forked.
+		$cpid == waitpid $cpid, 0 or die "waitpid() failed: $!";
+		exit $?;
+	}
+}
+
+if (defined $procmnt) {
+	# Directly bind-mounting the system's /proc into $procmnt would be wrong
+	# because we want to restrict proc to the new pid namespace. Thus we need
+	# to mount a new proc.
+	#
+	# FIXME: Funnily, I wasn't able to figure out how to directly mount a new
+	# proc into any other location than the old /proc without getting EINVAL,
+	# therefore, the workaround is to remount the old /proc and then bind mount
+	# that into the new location.
+	#
+	# This operation also fails with:
+	#    $ lxc-usernsexec -- unshare --mount-proc=... --fork --pid --mount -- ...
+	# or even with:
+	#    $ unshare --mount-proc=... --fork --pid --mount --user -- ...
+	# the authors of unshare(1) should thus be made aware of the workaround
+	# below (or whatever the real fix ends up being):
+	#
+	# The "my $s = ..." and "my $t = ..." constructs are necessary because
+	# string literals cannot be passed as arguments to the syscall function.
+	0 == syscall &SYS_mount, my $s1 = "none", my $t1 = "/proc", 0,
+		$MS_PRIVATE | $MS_REC, 0 or die "mount() failed: $!";
+	# Only do a bindmount if proc was required to be mounted elsewhere than
+	# /proc
+	if ($procmnt ne "/proc") {
+		0 == syscall &SYS_mount, my $s = "/proc", $procmnt, 0,
+			$MS_BIND | $MS_REC, 0 or die "mount failed: $!";
+	}
+}
+
+if (defined $sysmnt) {
+	# The "my $s = ..." and "my $t = ..." constructs are necessary because
+	# string literals cannot be passed as arguments to the syscall function.
+	0 == syscall &SYS_mount, my $s1 = "none", my $t1 = "/sys", 0,
+		$MS_PRIVATE | $MS_REC, 0 or die "mount() failed: $!";
+	# Only do a bindmount if sys was required to be mounted elsewhere than
+	# /sys
+	if ($sysmnt ne "/sys") {
+		0 == syscall &SYS_mount, my $s = "/sys", $sysmnt, 0,
+			$MS_BIND | $MS_REC, 0 or die "mount failed: $!";
+	}
+}
+
+if (defined $devmnt) {
+	# Only do a bindmount if dev was required to be mounted elsewhere than /dev
+	if ($devmnt ne "/dev") {
+		0 == syscall &SYS_mount, my $s = "/dev", $devmnt, 0,
+			$MS_BIND | $MS_REC, 0 or die "mount failed: $!";
+	}
+}
+
+if (defined $rootmnt) {
+	if ($rootmnt ne "/host-rootfs") {
+		mkdir $rootmnt;
+		0 == syscall &SYS_mount, my $s = "/", $rootmnt, 0,
+			$MS_BIND | $MS_REC, 0 or die "mount failed: $!";
+	}
+}
+
+## having this variable set could cause programs looking for unreachable
+## machines # see http://bugs.debian.org/780587
+#delete $ENV{http_proxy};
+
+# finally, exec our program
+exec @ARGV or die "exec() failed: $!";
+
+__END__
+=head1 NAME
+
+user-unshare - unprivileged linux namespaces with uid and gid maps
+
+=head1 SYNOPSIS
+
+user-unshare [options] [--] command
+
+=head1 DESCRIPTION
+
+This tool combines the ability of lxc-usernsexec(1) to map ranges of user and
+group ids into a new user namespace with the ability of unshare(1) to unshare
+several different kinds of namespaces. The options of this command are nearly
+a plain copy of lxc-usernsexec(1) and unshare(1).
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<-h, --help>
+
+Print a brief help message and exits.
+
+=item B<-M> I<uidmap>
+
+The uid map to use in the user namespace. Each map consists of four
+colon-separate values. First a character 'u', 'g' or 'b' to specify whether
+this map pertains to user ids, group ids, or both; next the first userid in
+the user namespace; next  the first userid as seen on the host; and finally
+the number of ids to be mapped.
+
+More than one map can be specified. If no map is specified, then by default
+the full uid and gid ranges granted by /etc/subuid and /etc/subgid will be
+mapped to the uids and gids starting at 0 in the container.
+
+Note that lxc-usernsexec always tries to setuid and setgid to 0 in the
+namespace. Therefore uid 0 in the namespace  must  be mapped.
+
+=item B<-i, --ipc>
+
+Unshare the IPC namespace.
+
+=item B<-m, --mount>
+
+Unshare the mount namespace.
+
+=item B<-n, --net>
+
+Unshare the network namespace.
+
+=item B<-p, --pid>
+
+Unshare  the pid namespace. See also the --fork and --mount-proc options.
+
+=item B<-u, --uts>
+
+Unshare the UTS namespace.
+
+=item B<-f, --fork>
+
+Fork the specified program as a child process of unshare rather than running
+it directly.  This is useful  when  creating  a new pid namespace.
+
+=item B<--mount-proc>I<[=mountpoint]>
+
+Just before running the program, mount the proc filesystem at I<mountpoint>
+(default is /proc).  This is useful when creating a new pid namespace.  It
+also implies creating a new mount namespace since the /proc mount would
+otherwise  mess  up  existing programs on the system.  The new proc filesystem
+is explicitly mounted as private (by MS_PRIVATE|MS_REC).
+
+=item B<--mount-sys>I<[=mountpoint]>
+
+Like --mount-proc, but for /sys.
+
+=item B<--mount-dev>I<[=mountpoint]>
+
+Like --mount-proc, but for /dev.
+
+=item B<--mount-host-rootfs>I<[=mountpoint]>
+
+Like --mount-proc, but for /.
+
+=back
+
+=head1 EXAMPLES
+
+This:
+
+	lxc-usernsexec -- unshare --mount-proc --fork --ipc --pid --net --mount \
+		-- sh -c "ls /proc | head && whoami && groups && ip link set lo up && ip addr && /sbin/runuser -u josch whoami"
+
+is equivalent to:
+
+	user-unshare --mount-proc --fork --ipc --pid --net --mount \
+		-- sh -c "ls /proc | head && whoami && groups && ip link set lo up && ip addr && /sbin/runuser -u josch whoami"
+
+Notice that the options are exactly identical.
+
+If  your  user  id is 1000, root in a container is mapped to 190000, and you
+wish to chown a file you own to root in the container, you can use:
+
+	lxc-usernsexec -m b:0:1000:1 -m b:1:190000:1 -- /bin/chown 1:1 $file
+
+which is equivalent to:
+
+	user-unshare -M b:0:1000:1 -M b:1:190000:1 -- /bin/chown 1:1 $file
+
+This maps your userid to root in the user namespace, and 190000 to uid 1.
+Since root in the user namespace is privileged over  all userids  mapped into
+the namespace, you are allowed to change the file ownership, which you could
+not do on the host using a simple chown.
+
+=head1 SEE ALSO
+
+	unshare(1), lxc-usernsexec(1), user_namespaces(7), newgidmap(1), newuidmap(1)
+
+=cut

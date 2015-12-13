@@ -47,9 +47,11 @@ Options
   configure-packages   configure the packages in the rootfs
 * run-hook <hook>      run a single hook in the board configuration folder
   run-hooks            run all of the hooks in the board configuration folder
+* create-rootfs        run all of the above commands (except *) in order
   create-tar           create a tar file from the rootfs folder
   create-image         create a disk image file from the tar file
 * shell                run a bash shell in the rootfs
+* delete               deletes all of the files created by other commands
   all                  run all of the above commands (except *) in order
 
   Environment Variables
@@ -180,7 +182,7 @@ TARBALL=$(pwd)/$(basename ${ROOTDIR}).tar
 IMAGE=$(pwd)/$(basename ${ROOTDIR}).img
 
 QEMU_STATIC=$(which qemu-arm-static)
-USER_UNSHARE="${SCRIPT_PATH}/user-unshare/user-unshare"
+USER_UNSHARE="${SCRIPT_PATH}/user-unshare"
 CHROOTCMD="${USER_UNSHARE} --mount-host-rootfs=${ROOTDIR}/host-rootfs -- chroot ${ROOTDIR}"
 CHROOTBINDCMD="${USER_UNSHARE} --mount-proc=${ROOTDIR}/proc --mount-sys=${ROOTDIR}/sys --mount-dev=${ROOTDIR}/dev --mount-host-rootfs=${ROOTDIR}/host-rootfs -- chroot ${ROOTDIR}"
 
@@ -340,6 +342,13 @@ $(${CHROOTCMD} cat ${EXCLUDE_LIST})"
     fi
 }
 
+function create-rootfs () {
+    create-conf
+    run-multistrap
+    copy-root
+    configure-packages
+    run-hooks
+}
 
 function create-image() {
     info "Creating image file..."
@@ -374,6 +383,15 @@ function create-image() {
     mv test1.img ${IMAGE}
 }
 
+function delete-all() {
+    info "Deleting all files..."
+    ${USER_UNSHARE} -- rm -rf ${ROOTDIR}
+    rm -f ${MULTISTRAPCONF}
+    rm -f ${TARBALL}
+    rm -f ${IMAGE}
+    info "Done."
+}
+
 function run-shell() {
     [ ! -d "${ROOTDIR}" ] && fail "${ROOTDIR} does not exist."
     debian_chroot="brickstrap" PROMPT_COMMAND="" HOME=/root ${CHROOTBINDCMD} bash
@@ -387,18 +405,17 @@ case "${cmd}" in
     configure-packages)  configure-packages;;
     run-hook)            run-hook ${BOARDDIR}/hooks/${run_hook_arg};;
     run-hooks)           run-hooks;;
+    create-rootfs)       create-rootfs;;
     create-tar)          create-tar;;
     create-image)        create-image;;
+    delete)              delete-all;;
 
     shell) run-shell;;
 
-    all) create-conf
-         run-multistrap
-         copy-root
-         configure-packages
-         run-hooks
-         create-tar
-         create-image
+    all)
+        create-rootfs
+        create-tar
+        create-image
     ;;
 
     *) fail "Unknown command. See brickstrap -h for list of commands.";;

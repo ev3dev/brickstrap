@@ -29,18 +29,26 @@ Installation
 Since brickstrap is essentially just a bash script, you can run directly from
 the source code.
 
-    git clone git://github.com/ev3dev/brickstrap --recursive
+    git clone git://github.com/ev3dev/brickstrap
     brickstrap/brickstrap.sh all
 
 There is also a Debian package available for Ubuntu trusty in the ev3dev package
 repository.
 
     sudo apt-key adv --keyserver pgp.mit.edu --recv-keys 2B210565
-    sudo apt-add-repository http://ev3dev.org/debian
+    sudo apt-add-repository "deb http://ev3dev.org/debian trusty main"
     sudo apt-get update
     sudo apt-get install brickstrap
 
-If you have never used `libguesfs` before, you need to set it up.
+If you just want to run from git, make sure you have these packages installed.
+They will be installed automatically if you use the `brickstrap` package, so you
+can skip this if that is the case.
+
+    sudo apt-get install qemu-user-static, multistrap, libguestfs-tools, uidmap
+
+If you have never used `libguesfs` before, you need to set it up. **Note:**
+`update-guestfs-appliance` may not exist in newer versions of guestfs. If get
+an error for that command, ignore it and move on.
 
     # create a supermin appliance
     sudo update-guestfs-appliance
