@@ -40,6 +40,16 @@ repository.
     sudo apt-get update
     sudo apt-get install brickstrap
 
+__Note:__ The official libguestfs package in trusty is broken. We have a patched
+version in the ev3dev.org package repository. Please make some noise on [this
+bug](https://bugs.launchpad.net/ubuntu/+source/libguestfs/+bug/1320590)
+by clicking the link that says "Does this affect you too?" (or leave a comment
+if you have something useful to say, besides "me too"). Same thing with the
+official multistrap package in ubuntu. It is broken too and we have our own
+version. So, make some noise on [this bug](https://bugs.launchpad.net/ubuntu/+source/multistrap/+bug/1313787)
+too. If we can get Ubuntu folks to update the packages, then there are 2 fewer
+packages that we have to maintain.
+
 If you just want to run from git, make sure you have these packages installed.
 They will be installed automatically if you use the `brickstrap` package, so you
 can skip this if that is the case.
@@ -49,6 +59,7 @@ can skip this if that is the case.
 If you have never used `libguesfs` before, you need to set it up. **Note:**
 `update-guestfs-appliance` may not exist in newer versions of guestfs. If get
 an error for that command, ignore it and move on.
+
 
     # create a supermin appliance
     sudo update-guestfs-appliance
