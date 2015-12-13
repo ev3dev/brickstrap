@@ -40,15 +40,13 @@ repository.
     sudo apt-get update
     sudo apt-get install brickstrap
 
-__Note:__ The official libguestfs package in trusty is broken. We have a patched
-version in the ev3dev.org package repository. Please make some noise on [this
-bug](https://bugs.launchpad.net/ubuntu/+source/libguestfs/+bug/1320590)
-by clicking the link that says "Does this affect you too?" (or leave a comment
-if you have something useful to say, besides "me too"). Same thing with the
-official multistrap package in ubuntu. It is broken too and we have our own
-version. So, make some noise on [this bug](https://bugs.launchpad.net/ubuntu/+source/multistrap/+bug/1313787)
-too. If we can get Ubuntu folks to update the packages, then there are 2 fewer
-packages that we have to maintain.
+__Note:__ The official multistrap package in Ubuntu trusty is broken , so make
+some noise on [this bug](https://bugs.launchpad.net/ubuntu/+source/multistrap/+bug/1313787).
+Just click the "Affects me to" button if you don't have anything useful to say.
+We maintain a patched version of multistrap in the ev3dev.org repository, so if
+you install brickstrap from there, you will get a working version of multistrap
+along with it. Otherwise, install multistrap from a more recent version of Ubuntu
+or patch it yourself (it's a simple fix, described in the bug report).
 
 If you just want to run from git, make sure you have these packages installed.
 They will be installed automatically if you use the `brickstrap` package, so you
