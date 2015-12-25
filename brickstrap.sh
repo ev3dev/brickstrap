@@ -60,7 +60,7 @@ Options
                   0=fail, ... 3=info(default), 4=debug
 
   DEBIAN_MIRROR   Specifies the debian mirror used by apt
-                  default: http://ftp.debian.org/debian
+                  default: http://httpredir.debian.org/debian
                   (applies to create-conf only)
 
   EV3DEV_MIRROR   Specifies the ev3dev mirror used by apt
@@ -198,10 +198,33 @@ set -o pipefail
 #####################################################################
 
 function create-conf() {
+    #
+    # Set the defaults for mirrors as promised by help, if these haven't been configured for the board yet.
+    #
+    if [ -z "${DEBIAN_MIRROR}" ]; then
+        DEBIAN_MIRROR="http://httpredir.debian.org/debian"
+    fi
+    if [ -z "${RASPBIAN_MIRROR}" ]; then
+        RASPBIAN_MIRROR="http://archive.raspbian.org/raspbian"
+    fi
+    if [ -z "${EV3DEV_MIRROR}" ]; then
+        EV3DEV_MIRROR="http://ev3dev.org/debian"
+    fi
     info "Creating multistrap configuration file..."
     debug "BOARDDIR: ${BOARDDIR}"
     for f in ${BOARDDIR}/packages/*; do
-        while read line; do PACKAGES="${PACKAGES} $line"; done < "$f"
+        while read line; do
+            case "$line" in
+            \#*|\;*) # permit comments: lines starting with # or ; are ignored.
+            ;;
+            *)
+                # avoid redundant spaces, i.e.  empty lines are ignored.
+                if [ -n "$line" ]; then
+                    PACKAGES="${PACKAGES} $line"
+                fi
+            ;;
+            esac
+        done < "$f"
     done
 
     multistrapconf_aptpreferences=false
@@ -318,6 +341,19 @@ function run-hooks() {
     fi
 }
 
+# Runs a status/config info reporting hook, to be called at the end of the brickstrap process.
+# This permits the user to aggregate important info about the build in a single, convenient report.
+# (E.g. root passwd, default account username+password, hostname, key fingerprints?)
+function dump-info-hook() {
+    DUMP_INFO_HOOK_SCRIPT="${BOARDDIR}/report-info-hook.sh"
+    if [ -r "${DUMP_INFO_HOOK_SCRIPT}" ]; then
+        info "Running info-dump:"
+        . "${DUMP_INFO_HOOK_SCRIPT}"
+    else
+        info "Skip info-dump, no script. (${DUMP_INFO_HOOK_SCRIPT})"
+    fi
+}
+
 function create-tar() {
     info "Creating tar of rootfs"
     debug "ROOTDIR: ${ROOTDIR}"
@@ -404,7 +440,10 @@ case "${cmd}" in
     copy-root)           copy-root;;
     configure-packages)  configure-packages;;
     run-hook)            run-hook ${BOARDDIR}/hooks/${run_hook_arg};;
-    run-hooks)           run-hooks;;
+    run-hooks)
+        run-hooks
+        dump-info-hook
+    ;;
     create-rootfs)       create-rootfs;;
     create-tar)          create-tar;;
     create-image)        create-image;;
@@ -416,6 +455,7 @@ case "${cmd}" in
         create-rootfs
         create-tar
         create-image
+        dump-info-hook
     ;;
 
     *) fail "Unknown command. See brickstrap -h for list of commands.";;
