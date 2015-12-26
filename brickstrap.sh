@@ -50,9 +50,7 @@ Options
 * create-rootfs        run all of the above commands (except *) in order
   create-tar           create a tar file from the rootfs folder
   create-image         create a disk image file from the tar file
-  create-report        run custom reporting script <board>/custom-report.sh if it exists
-                       Useful for aggregating information such as default passwords, key
-                       fingerprints and file checksums, right before 'all' finishes.
+  create-report        run custom reporting script <board>/custom-report.sh
 * shell                run a bash shell in the rootfs
 * delete               deletes all of the files created by other commands
   all                  run all of the above commands (except *) in order

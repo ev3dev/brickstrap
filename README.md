@@ -220,6 +220,14 @@ additional files there. During the `create-tar` stage, brickstap will append
 the files in `$ROOTDIR/tar-only` to the tarball. This means that files in this
 directory will overwrite any files in `$ROOTDIR` with the same name.
 
+### The `custom-report.sh` file
+
+This is an optional file that can be used to create a report after the image
+file is created. Like hooks, the file is sourced, so it must be bash compatible
+and does not need to be executable. It is run as the last step of the `all`
+command (after the image file has been created), so it should not modify the
+rootfs. It is useful for aggregating information about the image that was created
+such as default passwords, key fingerprints and file checksums.
 
 
 [polystrap]: https://gitlab.mister-muffin.de/josch/polystrap
