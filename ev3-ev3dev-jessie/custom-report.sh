@@ -1,3 +1,5 @@
+# Create a release notes template file.
+
 cat > ${IMAGE##$(pwd)/}-release-notes.md << EOF
 Release notes for ${IMAGE##$(pwd)/}
 ==============================================

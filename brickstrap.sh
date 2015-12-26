@@ -355,10 +355,11 @@ function run-hooks() {
 function create-report() {
     DUMP_INFO_HOOK_SCRIPT="${BOARDDIR}/custom-report.sh"
     if [ -r "${DUMP_INFO_HOOK_SCRIPT}" ]; then
-        info "Running custom reporting script:"
+        info "Running custom reporting script..."
         . "${DUMP_INFO_HOOK_SCRIPT}"
+        info "Done with custom reporting script."
     else
-        info "Skip custom report, no such script. (${DUMP_INFO_HOOK_SCRIPT})"
+        info "Skipping custom report, no such script. (${DUMP_INFO_HOOK_SCRIPT})"
     fi
 }
 
