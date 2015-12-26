@@ -76,9 +76,10 @@ clone is disabled by default. You can enable it temporarily by running...
 
     sudo sysctl -w kernel.unprivileged_userns_clone=1
 
-...or make it permanent by adding a configuration file...
+...or make it permanent by adding a configuration file and reloading...
 
     sudo sh -c 'echo kernel.unprivileged_userns_clone=1 > /etc/sysctl.d/50-brickstrap.conf'
+    sudo sysctl --system
 
 Usage
 -----
