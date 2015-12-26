@@ -120,7 +120,6 @@ variables that are used. It might look something like this...
 
     SUITE="jessie"
     ARCH="armel"
-    MIRROR="http://ftp.debian.org/debian"
     IMAGE_FILE_SIZE="900M"
 
 Most of the variables are just used to generate the `multistrap.conf` file, so
@@ -131,7 +130,7 @@ brickstrap script are:
 
 It may also be useful to use the pattern:
 
-    MIRROR=${MIRROR:-http://ftp.debian.org/debian}
+    IMAGE_FILE_SIZE=${IMAGE_FILE_SIZE:-"1800M"}
 
 so that environment variables can be passed to brickstrap to override the
 default values.

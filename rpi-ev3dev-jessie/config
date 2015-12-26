@@ -1,5 +1,3 @@
 SUITE="jessie"
 ARCH="armhf"
-RASPBIAN_MIRROR=${RASPBIAN_MIRROR:-"http://archive.raspbian.org/raspbian"}
-EV3DEV_MIRROR=${EV3DEV_MIRROR:-"http://ev3dev.org/raspbian"}
 IMAGE_FILE_SIZE=${IMAGE_FILE_SIZE:-"1800M"}
