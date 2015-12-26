@@ -50,6 +50,9 @@ Options
 * create-rootfs        run all of the above commands (except *) in order
   create-tar           create a tar file from the rootfs folder
   create-image         create a disk image file from the tar file
+  create-report        run custom reporting script <board>/custom-report.sh if it exists
+                       Useful for aggregating information such as default passwords, key
+                       fingerprints and file checksums, right before 'all' finishes.
 * shell                run a bash shell in the rootfs
 * delete               deletes all of the files created by other commands
   all                  run all of the above commands (except *) in order
@@ -60,7 +63,7 @@ Options
                   0=fail, ... 3=info(default), 4=debug
 
   DEBIAN_MIRROR   Specifies the debian mirror used by apt
-                  default: http://ftp.debian.org/debian
+                  default: http://httpredir.debian.org/debian
                   (applies to create-conf only)
 
   EV3DEV_MIRROR   Specifies the ev3dev mirror used by apt
@@ -198,10 +201,38 @@ set -o pipefail
 #####################################################################
 
 function create-conf() {
+    #
+    # Set the defaults for mirrors as promised by help, if these haven't been configured for the board yet.
+    #
+    if [ -z "${DEBIAN_MIRROR}" ]; then
+        DEBIAN_MIRROR="http://httpredir.debian.org/debian"
+    fi
+    if [ -z "${RASPBIAN_MIRROR}" ]; then
+        RASPBIAN_MIRROR="http://archive.raspbian.org/raspbian"
+    fi
+    if [ -z "${EV3DEV_MIRROR}" ]; then
+        EV3DEV_MIRROR="http://ev3dev.org/debian"
+    fi
     info "Creating multistrap configuration file..."
     debug "BOARDDIR: ${BOARDDIR}"
     for f in ${BOARDDIR}/packages/*; do
-        while read line; do PACKAGES="${PACKAGES} $line"; done < "$f"
+        #
+        # Use read || [ -n "$line" ] to make sure the last line is also fed to the do-block.
+        # Otherwise packages may be omitted from files which lack a trailing newline,
+        # because of the non-zero exit code of read which would cause while to skip the do-block & terminate the loop.
+        #
+        while IFS='' read -r line || [ -n "$line" ]; do
+            case "$line" in
+            \#*|\;*) # permit comments: lines starting with # or ; are ignored.
+            ;;
+            *)
+                # avoid redundant spaces, i.e.  empty lines are ignored.
+                if [ -n "$line" ]; then
+                    PACKAGES="${PACKAGES} $line"
+                fi
+            ;;
+            esac
+        done < "$f"
     done
 
     multistrapconf_aptpreferences=false
@@ -318,6 +349,19 @@ function run-hooks() {
     fi
 }
 
+# Runs a status/config info reporting hook, to be called at the end of the brickstrap process.
+# This permits the user to aggregate important info about the build in a single, convenient report.
+# (E.g. root passwd, default account username+password, hostname, key fingerprints?)
+function create-report() {
+    DUMP_INFO_HOOK_SCRIPT="${BOARDDIR}/custom-report.sh"
+    if [ -r "${DUMP_INFO_HOOK_SCRIPT}" ]; then
+        info "Running custom reporting script:"
+        . "${DUMP_INFO_HOOK_SCRIPT}"
+    else
+        info "Skip custom report, no such script. (${DUMP_INFO_HOOK_SCRIPT})"
+    fi
+}
+
 function create-tar() {
     info "Creating tar of rootfs"
     debug "ROOTDIR: ${ROOTDIR}"
@@ -408,6 +452,7 @@ case "${cmd}" in
     create-rootfs)       create-rootfs;;
     create-tar)          create-tar;;
     create-image)        create-image;;
+    create-report)       create-report;;
     delete)              delete-all;;
 
     shell) run-shell;;
@@ -416,6 +461,7 @@ case "${cmd}" in
         create-rootfs
         create-tar
         create-image
+        create-report
     ;;
 
     *) fail "Unknown command. See brickstrap -h for list of commands.";;
