@@ -58,7 +58,6 @@ If you have never used `libguesfs` before, you need to set it up. **Note:**
 `update-guestfs-appliance` may not exist in newer versions of guestfs. If get
 an error for that command, ignore it and move on.
 
-
     # create a supermin appliance
     sudo update-guestfs-appliance
     # add yourself to the kvm group
@@ -71,6 +70,15 @@ And you need to add yourself to `/etc/subuid` and `/etc/subgid` to be able to
 use uid/gid mapping.
 
     sudo usermod --add-subuids 200000-265534 --add-subgids 200000-265534 $USER
+
+If you are using Debian (does not apply to Ubuntu), unprivileged user namespace
+clone is disabled by default. You can enable it temporarily by running...
+
+    sudo sysctl -w kernel.unprivileged_userns_clone=1
+
+...or make it permanent by adding a configuration file...
+
+    sudo sh -c 'echo kernel.unprivileged_userns_clone=1 > /etc/sysctl.d/50-brickstrap.conf'
 
 Usage
 -----

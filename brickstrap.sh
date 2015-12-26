@@ -176,6 +176,11 @@ for SYSTEM_KERNEL_IMAGE in /boot/vmlinuz-*; do
         "Set permission with 'sudo chmod +r /boot/vmlinuz-*'."
 done
 
+if [[ "$(sysctl -ne kernel.unprivileged_userns_clone)" == "0" ]]; then
+    fail "Unprivileged user namespace clone is disabled. Enable it by running" \
+        "'sudo sysctl -w kernel.unprivileged_userns_clone=1'."
+fi
+
 # source board config file
 [ -r "${BOARDDIR}/config" ] && . "${BOARDDIR}/config"
 
