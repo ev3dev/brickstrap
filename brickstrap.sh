@@ -226,6 +226,10 @@ function create-conf() {
     info "Creating multistrap configuration file..."
     debug "BOARDDIR: ${BOARDDIR}"
     for f in ${BOARDDIR}/packages/*; do
+        # check that the package file hasn't been blacklisted
+        if echo "$BLACKLIST_PACKAGE_FILES" | grep -q $(basename "$f"); then
+            continue
+        fi
         #
         # Use read || [ -n "$line" ] to make sure the last line is also fed to the do-block.
         # Otherwise packages may be omitted from files which lack a trailing newline,
@@ -237,7 +241,10 @@ function create-conf() {
             ;;
             *)
                 # avoid redundant spaces, i.e.  empty lines are ignored.
-                if [ -n "$line" ]; then
+                # also check that the package line hasn't been blacklisted
+                if [ -z "$line" ] || echo "$BLACKLIST_PACKAGES" | grep -q "$line"; then
+                    continue
+                else
                     PACKAGES="${PACKAGES} $line"
                 fi
             ;;
