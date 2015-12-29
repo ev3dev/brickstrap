@@ -1,1 +1,1 @@
-echo "127.0.0.1	ev3dev-rpi ev3dev-rpi.local" >> $ROOTDIR/etc/hosts
+echo "127.0.0.1	ev3dev ev3dev.local" >> $ROOTDIR/etc/hosts
