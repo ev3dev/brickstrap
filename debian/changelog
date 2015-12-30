@@ -1,3 +1,53 @@
+brickstrap (0.4.0) trusty; urgency=medium
+
+  [ David Lechner ]
+  * [rpi] Update overlay readme for changes in kernel.
+  * Add python-ev3dev packages
+  * let proot be a bit more verbose
+  * Blacklist ev3-systemd preinst
+  * Add ev3dev-adduser-config package.
+  * Replace root-passwd hook with adduser
+  * Add python-setuptools packages
+  * Add ev3dev-bluez-config package
+
+  [ Johannes 'josch' Schauer ]
+  * user-unshare
+
+  [ David Lechner ]
+  * Remove dependency on proot
+  * Fix error about not being able to read /proc/cmdline
+  * Remove cdc/rndis gadget from firstboot
+  * Add brickman to RPi boards.
+  * Update RPi config.txt for PiStorms
+  * Update BrickPi in config.txt
+  * Add firmware-linux-free package
+  * Remove dphys-swapfile package.
+  * Add fbset package
+  * Add deb-src lines to apt sources.list
+  * Add bsdmainutils package.
+  * [RPi] Add hooks for setting FRAMEBUFFER environment variable.
+  * Add evtest package
+  * [EV3] Add zram swap package.
+  * Add create-rootfs command.
+  * Add delete command.
+
+  [ Brendan Simon ]
+  * Provide temporary awk during package config.
+
+  [ Johan Ouwerkerk ]
+  * Robustness improvements: unsharing on Debian, comments in package files,
+    and report hook.
+  * Enable the user to blacklist packages/package files during the build.
+
+  [ David Lechner ]
+  * Dropping golang-go from default install.
+  * Make hostname the same on all boards.
+  * Change default password to "maker"
+  * Add python-ev3dev package
+  * Add openrobertalab package
+
+ -- David Lechner <david@lechnology.com>  Wed, 30 Dec 2015 00:37:00 -0600
+
 brickstrap (0.3.3) trusty; urgency=medium
 
   [ David Lechner ]
