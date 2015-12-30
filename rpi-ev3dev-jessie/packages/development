@@ -2,6 +2,7 @@ gawk
 guile-1.8
 lua5.2
 python
+python-ev3dev
 python-evdev
 python-gobject
 python-pyudev
