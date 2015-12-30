@@ -1,2 +1,2 @@
-# Also want the brickpi overlay in the image
-cp $ROOTDIR/usr/lib/linux-image-*/overlays/brickpi-overlay.dtb $ROOTDIR/boot/flash/overlays/
+# Copy all of the overlays to the FAT partition
+cp $ROOTDIR/usr/lib/linux-image-*/overlays/*.dtb $ROOTDIR/boot/flash/overlays/
