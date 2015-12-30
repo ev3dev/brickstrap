@@ -2,6 +2,9 @@
 # so that it can be used by BrickPi
 $CHROOTBINDCMD systemctl mask serial-getty@ttyAMA0.service
 
+# prevent openrobertalab from running
+$CHROOTBINDCMD systemctl mask openrobertalab.service
+
 # disable nfs from running by default since most won't use it
 $CHROOTBINDCMD systemctl disable nfs-common.service
 $CHROOTBINDCMD systemctl disable rpcbind.service

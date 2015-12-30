@@ -6,6 +6,9 @@ $CHROOTBINDCMD systemctl mask serial-getty@ttyS2.service
 $CHROOTBINDCMD systemctl mask serial-getty@ttySU0.service
 $CHROOTBINDCMD systemctl mask serial-getty@ttySU1.service
 
+# prevent openrobertalab from running
+$CHROOTBINDCMD systemctl mask openrobertalab.service
+
 # disable nfs from running by default since most won't use it
 $CHROOTBINDCMD systemctl disable nfs-common.service
 $CHROOTBINDCMD systemctl disable rpcbind.service
