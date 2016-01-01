@@ -12,8 +12,9 @@
 #
 # Note: this file is not meant to be executed, source it as a library of
 # functions instead. Variables used by the functions (other than stack) are
-# namespaced using the 'BR_' prefix. Function names are namespaced similarly,
-# using the 'br_' prefix.
+# namespaced using the 'BR_' or 'BRP_' prefixes. Function names are namespaced
+# similarly, using the 'br_' and 'brp_' prefixes. See docs/namespacing.md for
+# more information on namespacing in brickstrap.
 #
 
 #
@@ -27,7 +28,7 @@
 # 'BR_IGNORE_INVALID_*' variable.
 #
 
-function br_validate_project()
+function brp_validate_project()
 {
     if [ -z "$BR_PROJECT" -a -z "$BR_IGNORE_INVALID_PROJECT" ]; then
         fail "Project required!"
@@ -37,7 +38,7 @@ function br_validate_project()
     fi
 }
 
-function br_validate_variant()
+function brp_validate_variant()
 {
     [ -z "$BR_VARIANT" ] || \
         [ -n "$BR_IGNORE_INVALID_VARIANT" ] || \
@@ -45,7 +46,7 @@ function br_validate_variant()
         fail "Not a valid variant (no such directory): '$BR_VARIANT'"
 }
 
-function br_validate_board()
+function brp_validate_board()
 {
     [ -z "$BR_BOARD" ] || \
         [ -n "$BR_IGNORE_INVALID_BOARD" ] || \
@@ -53,7 +54,7 @@ function br_validate_board()
         fail "Not a valid board (no such directory): '$BR_BOARD'"
 }
 
-function br_validate_arch()
+function brp_validate_arch()
 {
     [ -z "$BR_ARCH" ] || \
         [ -n "$BR_IGNORE_INVALID_ARCH" ] || \
@@ -61,7 +62,7 @@ function br_validate_arch()
         fail "Not a valid arch (no such directory): '$BR_ARCH'"
 }
 
-function br_validate_distro()
+function brp_validate_distro()
 {
     [ -z "$BR_DISTRO" ] || \
         [ -n "$BR_IGNORE_INVALID_DISTRO" ] || \
@@ -74,7 +75,7 @@ function br_validate_distro()
 # The order in which various variables are checked is significant (for precise
 # error reporting in case of simple typos).
 #
-function br_validate_search_path_vars()
+function brp_validate_search_path_vars()
 {
     br_validate_project && br_validate_variant && br_validate_board && \
         br_validate_arch && br_validate_distro
@@ -94,7 +95,7 @@ function br_validate_search_path_vars()
 #    eval and passed the path to test). Special primitives 'true' and false'
 #    are recognised for the purpose of blanket inclusion/exclusion of paths.
 #
-function br_accept_path_if()
+function brp_accept_path_if()
 {
     case "$2" in
     # known good path tests
@@ -124,7 +125,7 @@ function br_accept_path_if()
 #    '0' on success. This mode may be useful in if-else logic to force
 #    continued evaluation of subsequent clauses.
 #
-function br_check_path()
+function brp_check_path()
 {
     if [ $# -ge 2 ] && br_accept_path_if "$1" "$2"; then
         if [ $# -eq 2 -o "$3" != "continue" ]; then
@@ -150,7 +151,7 @@ function br_check_path()
 #    has been found. This can be used to get all 'available' paths matching the
 #    base path and path test.
 #
-function br_find_distro_path()
+function brp_find_distro_path()
 {
     if [ $# -lt 3 -o -z "$BR_DISTRO" ] || \
         [ ! -d "$3/distro/$BR_DISTRO" -a -z "$BR_IGNORE_INVALID_DISTRO" ]; then
@@ -173,7 +174,7 @@ function br_find_distro_path()
 #    has been found. This can be used to get all 'available' paths matching the
 #    base path and path test.
 #
-function br_find_arch_path()
+function brp_find_arch_path()
 {
     # todo 'aliasing' for native arch?
     if [ $# -lt 3 -o -z "$BR_ARCH" ] || \
@@ -199,7 +200,7 @@ function br_find_arch_path()
 #    has been found. This can be used to get all 'available' paths matching the
 #    base path and path test.
 #
-function br_find_board_path ()
+function brp_find_board_path ()
 {
     if [ $# -lt 3 -o -z "$BR_BOARD" ] || \
         [ ! -d "$3/board/$BR_BOARD" -a -z "$BR_IGNORE_INVALID_BOARD" ]; then
@@ -226,7 +227,7 @@ function br_find_board_path ()
 #    has been found. This can be used to get all 'available' paths matching the
 #    base path and path test.
 #
-function br_find_variant_path()
+function brp_find_variant_path()
 {
     if [ $# -lt 3 -o -z "$BR_VARIANT" ] || \
         [ ! -d "$3/variant/$BR_VARIANT" -a -z "$BR_IGNORE_INVALID_VARIANT" ]
@@ -254,7 +255,7 @@ function br_find_variant_path()
 #    has been found. This can be used to get all 'available' paths matching the
 #    base path and path test.
 #
-function br_find_path()
+function brp_find_path()
 {
     if [ $# -lt 2 -o -z "$BR_PROJECT" ]; then
         return 1
@@ -368,8 +369,8 @@ function br_consume_path_list()
 {
     BR_PATHS_CB_RETURNCODE=0
     [ $# -ge 1 -a -n "$1" ] && \
-    while IFS='' read -r BR_PATHS_CUR_FILE || [ -n "$BR_PATHS_CUR_FILE" ]; do
-        eval "$@ \"$BR_PATHS_CUR_FILE\"" || BR_PATHS_CB_RETURNCODE=$?
+    while IFS='' read -r BRP_PATHS_CUR_FILE || [ -n "$BRP_PATHS_CUR_FILE" ]; do
+        eval "$@ \"$BRP_PATHS_CUR_FILE\"" || BR_PATHS_CB_RETURNCODE=$?
     done && return "$BR_PATHS_CB_RETURNCODE"
 }
 
@@ -386,11 +387,11 @@ function br_consume_path_list_iterate_directories()
 {
     BR_PATHS_CB_RETURNCODE=0
     [ $# -ge 2 -a -n "$1" -a -n "$2" ] && \
-    while IFS='' read -r BR_PATHS_CUR_FILE || [ -n "$BR_PATHS_CUR_FILE" ]; do
-        for BR_PATHS_CUR_FILE in "$BR_PATHS_CUR_FILE/"*; do
-            if [ "$(br_locate_path "$1/`basename $BR_PATHS_CUR_FILE`")" = \
-                "$BR_PATHS_CUR_FILE" ]; then
-                eval "${@:2:$#} \"$BR_PATHS_CUR_FILE\"" || \
+    while IFS='' read -r BRP_PATHS_CUR_FILE || [ -n "$BRP_PATHS_CUR_FILE" ]; do
+        for BRP_PATHS_CUR_FILE in "$BRP_PATHS_CUR_FILE/"*; do
+            if [ "$(br_locate_path "$1/`basename $BRP_PATHS_CUR_FILE`")" = \
+                "$BRP_PATHS_CUR_FILE" ]; then
+                eval "${@:2:$#} \"$BRP_PATHS_CUR_FILE\"" || \
                     BR_PATHS_CB_RETURNCODE=$?
             fi
         done
@@ -403,13 +404,13 @@ function br_consume_path_list_iterate_directories()
 # and may be wired up to respective commands directly.
 #
 
-function br_print_path()
+function brp_print_path()
 {
     br_validate_search_path_vars && if [ -n "$1" ]; then
         info "Locate: '$1'"
-        if BR_PATHS_CUR_FILE=$(br_locate_path "$1") && \
-            [ -n "$BR_PATHS_CUR_FILE" ]; then
-            info "Found: '$BR_PATHS_CUR_FILE'"
+        if BRP_PATHS_CUR_FILE=$(br_locate_path "$1") && \
+            [ -n "$BRP_PATHS_CUR_FILE" ]; then
+            info "Found: '$BRP_PATHS_CUR_FILE'"
             return 0
         else
             info "Not found."
@@ -420,15 +421,15 @@ function br_print_path()
     fi
 }
 
-function br_print_all_paths()
+function brp_print_all_paths()
 {
     br_validate_search_path_vars && if [ -n "$1" ]; then
-        BR_path_prio_count=0
+        BRP_path_prio_count=0
         BR_PATHS_CB_RETURNCODE=""
         info "Find: '$1'"
         br_list_paths "$1" -e "$2" | br_consume_path_list \
-            'br_path_cb() { ((BR_path_prio_count++)); \
-            info "[$BR_path_prio_count]: '"'\$1'"'"; }; br_path_cb'
+            'br_path_cb() { ((BRP_path_prio_count++)); \
+            info "[$BRP_path_prio_count]: '"'\$1'"'"; }; br_path_cb'
 
         if [ $? -eq 0 ]; then
             return 0
@@ -443,16 +444,16 @@ function br_print_all_paths()
     fi
 }
 
-function br_print_all_dir_listing()
+function brp_print_all_dir_listing()
 {
     br_validate_project && if [ -n "$1" ]; then
-        BR_path_prio_count=0
+        BRP_path_prio_count=0
         BR_PATHS_CB_RETURNCODE=""
         info "List directories: $1"
         br_list_directories "$1" "$2" | \
             br_consume_path_list_iterate_directories "$1" \
-            'br_path_cb() { ((BR_path_prio_count++)); \
-            info "[$BR_path_prio_count]: '"'\$1'"'"; }; br_path_cb'
+            'br_path_cb() { ((BRP_path_prio_count++)); \
+            info "[$BRP_path_prio_count]: '"'\$1'"'"; }; br_path_cb'
 
         if [ $? -eq 0 ]; then
             return 0
@@ -467,10 +468,10 @@ function br_print_all_dir_listing()
     fi
 }
 
-function br_print_search_paths()
+function brp_print_search_paths()
 {
     if [ -n "$BR_PROJECT" ]; then
-        BR_path_prio_count=0
+        BRP_path_prio_count=0
         BR_PATHS_CB_RETURNCODE=""
         if [ ! -d "$BR_PROJECT" ]; then
             warn "Invalid project (not a directory): $BR_PROJECT"
@@ -479,8 +480,8 @@ function br_print_search_paths()
         fi
         info "List search path:"
         br_list_paths "" 'true' "$1" | br_consume_path_list \
-        'br_path_cb() { ((BR_path_prio_count++)); \
-        info "Path[$BR_path_prio_count]: '"'\$1'"'"; }; br_path_cb'
+        'br_path_cb() { ((BRP_path_prio_count++)); \
+        info "Path[$BRP_path_prio_count]: '"'\$1'"'"; }; br_path_cb'
 
         if [ $? -eq 0 ]; then
             return 0

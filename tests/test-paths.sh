@@ -47,11 +47,11 @@ fi
 
 BR_TEST_CMD="$1" && shift 1 && case "$BR_TEST_CMD" in
     test-env)
-        br_validate_search_path_vars && info "Environment passes validation."
+        brp_validate_search_path_vars && info "Environment passes validation."
     ;;
-    path) br_print_search_paths "$@";;
-    locate) br_print_path "$@";;
-    find) br_print_all_paths "$@";;
-    dir)  br_print_all_dir_listing "$@";;
+    path) brp_print_search_paths "$@";;
+    locate) brp_print_path "$@";;
+    find) brp_print_all_paths "$@";;
+    dir)  brp_print_all_dir_listing "$@";;
     *) fail "Invalid command: '$1'.\nUse: test-env, path, locate, find, dir";;
 esac
