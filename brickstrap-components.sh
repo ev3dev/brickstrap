@@ -17,6 +17,54 @@
 # more information on namespacing in brickstrap.
 #
 
+#
+# Checks that a project path doesn't map to a 'reserved' brickstrap directory.
+# Reserved brickstrap directories are directories underneath $(br_script_path)
+# which are part of brickstrap source, tests or documentation as opposed to the
+# example/default projects shipped with brickstrap.
+# $1 the path to check, must be output of readlink -f or similar:
+#    a normalised (canonical) path without a trailing /
+#
+function brp_validate_project_path()
+{
+    # The trick is to compare $1 to a substring expression as a search pattern.
+    # If both strings match then $1 does *not* start with the search pattern.
+
+    # Start with simple check allow $1 if it doesn't start with br_script_path
+    [ $# -eq 1 -a -n "$1" ] && if [ "${1##$(br_script_path)}" = "$1" ]; then
+        BR_PROJECT_DIR="$1"
+    # Allow $1 if it isn't blacklisted.
+    elif [ "$(br_script_path)" != "$1" ] && \
+        [ "${1##$(br_script_path)/tests}" = "$1" ] && \
+        [ "${1##$(br_script_path)/docs}" = "$1" ]; then
+        BR_PROJECT_DIR="$1"
+    else
+        fail "Invalid project name: '$BR_PROJECT'.
+Directory does not exist: '$BR_PROJECT'
+Directory is reserved/disallowed: '$1'"
+    fi
+}
+
+#
+# Checks that a component path doesn't attempt to escape the project directory.
+# Components are supposed to live underneath a project directory, so any name
+# that doesn't, clearly, must be invalid. This function relies on a valid
+# project name: brp_validate_project_name() must have been called beforehand.
+# $1 the path to check, must be output of readlink -f or similar:
+#    a normalised (canonical) path without a trailing /
+# $2 the original component name (before normalisation)
+#
+function brp_validate_component_path()
+{
+    # Use a similar trick to brp_validate_project_path, but opposite:
+    # If the string comparison succeeds, it means the component path lives
+    # outside the project directory, which is invalid.
+    [ $# -eq 2 ] && if [ "${1##$(br_project_dir)}" = "$1" ]; then
+        fail "Invalid component name: '$2'
+Directory outside the project: '$1'
+Project directory: $(br_project_dir)"
+    fi
+}
 
 #
 # Validates the project name configured (via commandline arguments).
@@ -29,10 +77,11 @@ function brp_validate_project_name()
     if [ -z "$BR_PROJECT" ]; then
         fail "No project specified (project name must not be empty)"
     elif [ -r "$BR_PROJECT" -a -d "$BR_PROJECT" ]; then
-        BR_PROJECT_DIR=$(readlink -f "$BR_PROJECT")
+        brp_validate_project_path "$(readlink -f "$BR_PROJECT")"
     elif [ -r "$(br_script_path)/$BR_PROJECT" ] && \
         [ -d "$(br_script_path)/$BR_PROJECT" ]; then
-        BR_PROJECT_DIR=$(readlink -f "$(br_script_path)/$BR_PROJECT")
+        brp_validate_project_path \
+            "$(readlink -f "$(br_script_path)/$BR_PROJECT")"
     else
         fail "Invalid project name (no such directory): '$BR_PROJECT'.
 Directory does not exist: '$BR_PROJECT'
@@ -64,6 +113,9 @@ function brp_validate_component_name()
     elif [ ! -d "$(br_project_dir)/${1##/}" ]; then
         fail "Not a valid component name: '$1'.
 Directory does not exist: '$(br_project_dir)/${1##/}'."
+    else
+        brp_validate_component_path \
+            "$(readlink -f "$(br_project_dir)/${1##/}")" "$1"
     fi
 }
 
