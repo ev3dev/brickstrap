@@ -41,6 +41,7 @@ function br_script_path()
 }
 
 . "$(br_script_path)/brickstrap-components.sh"
+. "$(br_script_path)/brickstrap-utils.sh"
 
 # Commandline options. This defines the usage page
 BRP_USAGE=$(cat <<'EOF'
@@ -57,6 +58,17 @@ Options
                This option is required and should occur exactly once.
                Values are either a path to the project directory or the name of
                an example project shipped with brickstrap by default.
+-Q <qemu>      Optional: override which QEMU binary to use for emulation of
+               foreign instruction sets.
+
+               The <qemu> value must be either the path to a binary or
+               the name of a Debian or QEMU architecture or the special string
+               'none'. If <qemu> corresponds to a binary it is used
+               unconditionally, without further validation. If <qemu> is an
+               architecture which matches the host architecture or 'native'
+               then no emulator will be used. Otherwise the system is queried
+               for a well known QEMU emulator for the architecture matching the
+               <qemu> value.
 -f             Force overwriting existing files/directories.
 -h             Help. (You are looking at it.)
 
@@ -148,7 +160,7 @@ function brp_help() {
 function brp_parse_cli_options()
 {
     while [ $# -gt 0 ] ; do
-        while getopts "fhc:d:p:" BRP_OPT; do
+        while getopts "fhc:d:p:Q:" BRP_OPT; do
             case "$BRP_OPT" in
             f) FORCE=true;;
             h)
@@ -161,6 +173,8 @@ function brp_parse_cli_options()
                     exit 1
                 elif [ -z "$BR_PROJECT" ]; then
                     BR_PROJECT="$OPTARG"
+                elif [ "$BR_PROJECT" = "$OPTARG" ]; then
+                    warn "Ignoring duplicate project: '$OPTARG'"
                 else
                     brp_help "Duplicate project: -$BRP_OPT '$OPTARG'.
 Project was: '$BR_PROJECT'"
@@ -180,6 +194,20 @@ Project was: '$BR_PROJECT'"
                 fi
             ;;
             d) ROOTDIR="$OPTARG";;
+            Q)
+                if [ -z "$OPTARG" ]; then
+                    brp_help 'Empty QEMU architecture names are invalid.'
+                    exit 1
+                elif [ -z "$BR_QEMU" ]; then
+                    BR_QEMU="$OPTARG"
+                elif [ "$BR_QEMU" = "$OPTARG" ]; then
+                    warn "Ignoring duplicate QEMU architecture: '$OPTARG'"
+                else
+                    brp_help "Duplicate QEMU architecture: -$BRP_OPT '$OPTARG'.
+QEMU architecture was: '$BR_QEMU'"
+                    exit 1
+                fi
+            ;;
             \?) # unknown flag or missing argument
                 brp_help
                 exit 1
@@ -214,9 +242,10 @@ function brp_sanity_check_cli_options()
 
 function brp_validate_cli_options()
 {
-    brp_sanity_check_cli_options "$@" && \
-    brp_validate_project_name && \
+    brp_sanity_check_cli_options "$@"
+    brp_validate_project_name
     brp_validate_component_names
+    brp_validate_qemu || [ $? -eq 255 ] # no QEMU specified = 255
 }
 
 
@@ -259,11 +288,6 @@ function brp_init_env()
     MULTISTRAPCONF=$(pwd)/$(basename ${ROOTDIR}).multistrap.conf
     TARBALL=$(pwd)/$(basename ${ROOTDIR}).tar
     IMAGE=$(pwd)/$(basename ${ROOTDIR}).img
-
-    QEMU_STATIC=$(which qemu-arm-static)
-    USER_UNSHARE="$(br_script_path)/user-unshare"
-    CHROOTCMD="${USER_UNSHARE} --mount-host-rootfs=${ROOTDIR}/host-rootfs -- chroot ${ROOTDIR}"
-    CHROOTBINDCMD="${USER_UNSHARE} --mount-proc=${ROOTDIR}/proc --mount-sys=${ROOTDIR}/sys --mount-dev=${ROOTDIR}/dev --mount-host-rootfs=${ROOTDIR}/host-rootfs -- chroot ${ROOTDIR}"
 }
 
 function brp_read_package_file()
@@ -352,11 +376,11 @@ function brp_run_multistrap() {
     debug "ROOTDIR: ${ROOTDIR}"
     if [ ! -z ${FORCE} ] && [ -d "${ROOTDIR}" ]; then
         warn "Removing existing rootfs ${ROOTDIR}"
-        ${USER_UNSHARE} -- rm -rf ${ROOTDIR}
+        brp_unshare -- rm -rf ${ROOTDIR}
     fi
-    ${USER_UNSHARE} -- multistrap ${MSTRAP_SIM} --file "${MULTISTRAPCONF}" \
+    brp_unshare -- multistrap ${MSTRAP_SIM} --file "${MULTISTRAPCONF}" \
         --dir ${ROOTDIR} --no-auth
-    cp ${QEMU_STATIC} ${ROOTDIR}/usr/bin/
+    brp_setup_qemu_in_rootfs
 }
 
 function brp_copy_to_root_dir() {
@@ -379,7 +403,7 @@ function brp_copy_root() {
 
 function brp_preseed_debconf() {
     cp "$1" "${ROOTDIR}/tmp/debconfseed.txt"
-    ${CHROOTCMD} debconf-set-selections /tmp/debconfseed.txt
+    br_chroot debconf-set-selections /tmp/debconfseed.txt
     rm "${ROOTDIR}/tmp/debconfseed.txt"
 }
 
@@ -390,8 +414,8 @@ function brp_configure_packages () {
     # awk needs to be in the path, but Debian symlinks are not
     # configured yet, so make a temporary one in /usr/local/bin.
     info "Creating awk temporary symlink"
-    ${CHROOTCMD} mkdir -p /usr/local/bin
-    ${CHROOTCMD} ln -sf /usr/bin/gawk /usr/local/bin/awk
+    br_chroot mkdir -p /usr/local/bin
+    br_chroot ln -sf /usr/bin/gawk /usr/local/bin/awk
 
     # preseed debconf
     if br_list_paths debconfseed.txt -r >/dev/null; then
@@ -412,18 +436,18 @@ function brp_configure_packages () {
             info "running $(basename "$BRP_script")"
                 DPKG_MAINTSCRIPT_NAME=preinst \
                 DPKG_MAINTSCRIPT_PACKAGE="`basename ${BRP_script} .preinst`" \
-                    ${CHROOTBINDCMD} ${BRP_script##$ROOTDIR} install
+                    br_chroot_bind ${BRP_script##$ROOTDIR} install
         fi
     done
 
     # run dpkg `--configure -a` twice because of errors during the first run
     info "configuring packages..."
-    ${CHROOTBINDCMD} /usr/bin/dpkg --configure -a || \
-    ${CHROOTBINDCMD} /usr/bin/dpkg --configure -a || true
+    br_chroot_bind /usr/bin/dpkg --configure -a || \
+    br_chroot_bind /usr/bin/dpkg --configure -a || true
 
     # remove our temporary awk symlink as it is no longer required.
     info "Removing awk temporary symlink"
-    ${CHROOTCMD} rm -f /usr/local/bin/awk
+    br_chroot rm -f /usr/local/bin/awk
 }
 
 function brp_report_hooks_exit_code()
@@ -516,13 +540,19 @@ function brp_create_tar() {
 
     info "Excluding files: "
     BRP_EXCLUDE_LIST="${ROOTDIR}/tar-exclude"
-    br_cat_files tar-exclude | tee "$BRP_EXCLUDE_LIST"
+    br_cat_files tar-exclude | tee "$BRP_EXCLUDE_LIST" && echo "" # add newline
+
+    brp_determine_qemu
+    # test if QEMU should be excluded, if so, append it to exclude list
+    if br_get_rootfs_qemu >/dev/null; then
+        echo "" >> "$BRP_EXCLUDE_LIST"
+        echo "$(br_get_rootfs_qemu)" >> "$BRP_EXCLUDE_LIST"
+    fi
 
     # need to generate tar inside fakechroot
     # so that absolute symlinks are correct
 
-    ${CHROOTCMD} tar cpf /host-rootfs/${TARBALL} \
-        --exclude=host-rootfs --exclude=usr/bin/$(basename ${QEMU_STATIC}) \
+    br_chroot tar cpf /host-rootfs/${TARBALL} --exclude=host-rootfs \
         --exclude=tar-only --exclude=${BRP_EXCLUDE_LIST##$ROOTDIR/} \
         --exclude-from=${BRP_EXCLUDE_LIST##$ROOTDIR} .
 
@@ -530,7 +560,7 @@ function brp_create_tar() {
         br_for_each_path "$(br_list_directories tar-only)" brp_copy_to_tar_only
         if [ -d "${ROOTDIR}/tar-only" ]; then
             info "Adding tar-only files:"
-            ${CHROOTCMD} tar rvpf /host-rootfs/${TARBALL} -C /tar-only .
+            br_chroot tar rvpf /host-rootfs/${TARBALL} -C /tar-only .
         fi
     fi
 }
@@ -578,7 +608,7 @@ function brp_create_image() {
 
 function brp_delete_all() {
     info "Deleting all files..."
-    ${USER_UNSHARE} -- rm -rf ${ROOTDIR}
+    brp_unshare -- rm -rf ${ROOTDIR}
     rm -f ${MULTISTRAPCONF}
     rm -f ${TARBALL}
     rm -f ${IMAGE}
@@ -592,12 +622,12 @@ function brp_run_shell() {
     elif [ -n "$1" ]; then
         info "Entering chosen shell: '$1'"
         debian_chroot="brickstrap" PROMPT_COMMAND="" HOME=/root \
-            ${CHROOTBINDCMD} "$1"
+            br_chroot_bind "$1"
     # by default assume bash as shell
     else
         info "Entering default shell"
         debian_chroot="brickstrap" PROMPT_COMMAND="" HOME=/root \
-            ${CHROOTBINDCMD} bash
+            br_chroot_bind bash
     fi
 }
 

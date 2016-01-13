@@ -57,7 +57,7 @@ function brp_is_native()
     [ $# -eq 1 -a -n "$1" ] && if [ "$(dpkg --print-architecture)" = "$1" ]; \
     then
         return 0
-    elif [ "$1" = "native" ]; then
+    elif [ "$1" = "none" ]; then
         return 0
     else
         return 1
@@ -119,7 +119,7 @@ function brp_guess_qemu()
     [ $# -eq 1 -a -n "$1" ] && \
     if brp_is_native "$1"; then
         return 0
-    elif
+    else
         which "qemu-$(brp_resolve_qemu_alias "$1")-static"
     fi
 }
@@ -130,32 +130,45 @@ function brp_guess_qemu()
 #  - prefer an explicitly configured QEMU (QEMU_STATIC or BR_QEMU)
 #  - next, attempt to auto-detect QEMU through binfmt support scripts/tools
 #  - finally, guess QEMU based on contents of ARCH, if available
-# Returns 1 if QEMU was explicitly configured by the user.
-# Fails if no QEMU can be determined.
+# Returns 0 if no QEMU is required.
+# Returns 254 if QEMU was explicitly configured by the user.
+# Returns 255 if QEMU was auto-detected.
+# BRP_BINFMT is set to the QEMU which is found or to the empty string if no
+# emulator is required. Fails if an emulator cannot be determined.
 #
-function brp_determine_qemu()
+function brp_determine_qemu_impl()
 {
-    BRP_BINFMT=$(brp_validate_qemu)
-
-    # was BRP_BINFMT configured via environment or commandline option argument?
-    if [ $? -eq 0 ]; then
+    BRP_BINFMT=""
+    # is BRP_BINFMT configured via environment or commandline option argument?
+    if brp_validate_qemu; then
         if [ -n "$BRP_BINFMT" ]; then
-            echo -n "$BRP_BINFMT"
-            return 1
-        else # explicit 'native' configuration.
-            return 0
+            info "Using configured QEMU: '$BRP_BINFMT'"
+            return 254
+        else
+            info "Not using QEMU: configuration indicates it is not required"
         fi
+    # is BRP_BINFMT explicitly not configured yet.
+    elif brp_auto_detect_qemu; then
+        if [ -n "$BRP_BINFMT" ]; then
+            info "Using auto-detected QEMU: '$BRP_BINFMT'"
+            return 255
+        else
+            info "Not using QEMU: detected or guessed that it is not required"
+        fi
+    else
+        fail "Unable to determine QEMU!"
     fi
+}
 
-    BR_BINFMT=$(brp_find_binfmt)
+function brp_auto_detect_qemu()
+{
+    BRP_BINFMT=$(brp_find_binfmt)
     if [ $? -eq 0 ]; then
         # double check that the binfmt thingy refers to what appears to be QEMU
         # it could be something silly like a misconfigured binfmt support.
-        [ -z "$BR_BINFMT" ] || brp_check_binfmt_qemu "$BR_BINFMT" || \
-            warn "This may not be a QEMU binary after all: '$BR_BINFMT'.
+        [ -z "$BRP_BINFMT" ] || brp_check_binfmt_is_qemu "$BRP_BINFMT" || \
+            warn "This may not be a QEMU binary after all: '$BRP_BINFMT'.
 Check your binfmt configuration and/or configure QEMU to silence this warning."
-        echo -n "$BR_BINFMT"
-        return 0
     else
         # canonical 'ARCH' var is set
         # Fall back to guessing games involving $ARCH
@@ -167,7 +180,7 @@ Check your binfmt configuration and/or configure QEMU to silence this warning."
         if [ -n "$ARCH" ]; then
             warn "Unable to auto-detect required QEMU based on binfmt support.
 Reverting to guessing QEMU; install binfmt-support packages to avoid it."
-            brp_guess_qemu "$ARCH"
+            BRP_BINFMT=$(brp_guess_qemu "$ARCH")
         # arch not set, report failure of binfmt support mechanism as fatal
         elif [ ! -x /usr/sbin/update-binfmts ]; then
             fail "/usr/sbin/update-binfmts is not executable.
@@ -183,40 +196,82 @@ Do you have necessary binfmt packages installed?"
 #
 # Check whether commandline or environment based configuration of QEMU is
 # 'valid', i.e that it corresponds to an existing QEMU interpreter.
-# Returns 1 if no QEMU was set, to signal brp_determine_qemu
-# Fails if QEMU is explicitly misconfigured.
+# The variable 'BRP_BINFMT' is set to the passed QEMU interpreter if valid.
+# Returns 255 if no QEMU was configured. Fails if the QEMU settings are
+# misconfigured.
 #
 function brp_validate_qemu()
 {
     # check environment variable first, may have been set by config
     if [ -n "$QEMU_STATIC" -a -x "$QEMU_STATIC" ]; then
-        echo -n "$(readlink -f $QEMU_STATIC)"
+        BRP_BINFMT="$(readlink -f $QEMU_STATIC)"
+    # try to relate a QEMU_STATIC value to a binary indirectly.
+    elif [ -n "$QEMU_STATIC" ] && brp_guess_qemu "$QEMU_STATIC" >/dev/null
+    then
+        BRP_BINFMT=$(brp_guess_qemu "$QEMU_STATIC")
     # check if BR_QEMU (commandline option) corresponds to a binary
     elif [ -n "$BR_QEMU" -a -x "$BR_QEMU" ]; then
-        echo -n "$(readlink -f $BR_QEMU)"
+        BRP_BINFMT="$(readlink -f $BR_QEMU)"
     # try to relate a BR_QEMU value to a binary indirectly.
+    elif [ -n "$BR_QEMU" ] && brp_guess_qemu "$BR_QEMU" >/dev/null; then
+        BRP_BINFMT=$(brp_guess_qemu "$BR_QEMU")
+    elif [ -n "$QEMU_STATIC" ]; then
+        fail "Unable to determine QEMU from configuration: '$QEMU_STATIC'"
     elif [ -n "$BR_QEMU" ]; then
-        BRP_BINFMT=$(brp_quess_qemu "$BR_QEMU")
-        if [ $? -eq 0 ]; then
-            echo -n "$BR_BINFMT"
-        else
-            fail "Unable to determine QEMU for option argument: '$BR_QEMU'"
-        fi
+        fail "Unable to determine QEMU from option argument: '$BR_QEMU'"
     else
-        return 1 # not set
+        BRP_BINFMT=""
+        return 255 # not set
     fi
 }
 
 #
-# Copy utility to install QEMU to the rootfs
-# $1: path to install the binary to, viewed from inside the chroot of ROOTDIR
-# $2: path to the binary to copy, viewed from the host system
+# Wrapper around brp_determine_qemu_impl which ensures that the actual logic is
+# evaluated only once.
 #
-function brp_copy_qemu_to_rootfs()
+function brp_determine_qemu()
 {
-    [ $# -eq 2 -a -n "$1" -a -n "$2" -a -r "$2" ] && \
-        mkdir -p "${ROOTDIR}$(dirname "$1")" && \
-        cp "$2" "${ROOTDIR}$1" && QEMU_STATIC="$1"
+    if [ -z "$BRP_HOST_QEMU" -a -z "$BRP_ROOTFS_QEMU" ]; then
+        brp_determine_qemu_impl || case "$?" in
+            254)
+                # manually configured QEMU binaries may live in developer home
+                # directories or other non-standard locations. Fix up paths
+                # inside the chroot to pretend the binaries are from /usr/bin
+                #
+                BRP_ROOTFS_QEMU="/usr/bin/$(basename "$BRP_BINFMT")"
+                BRP_HOST_QEMU="$BRP_BINFMT"
+            ;;
+            255)
+                # system QEMU binary found (or something passing for it anyway)
+                # copy it to rootfs, preserving the same path in chroot.
+                #
+                BRP_ROOTFS_QEMU="$BRP_BINFMT"
+                BRP_HOST_QEMU="$BRP_BINFMT"
+            ;;
+            *)  fail "Unable to determine QEMU!";;
+        esac
+    fi
+}
+
+#
+# Look up the path to QEMU binary to use on the host filesystem.
+# This function requires the QEMU interpreter has been determined, first.
+# See brp_determine_qemu
+#
+function br_get_host_qemu()
+{
+    [ -n "$BRP_HOST_QEMU" ] && echo -n "$BRP_HOST_QEMU"
+}
+
+#
+# Look up the path to QEMU binary to use in the rootfs.
+# This function requires the QEMU interpreter has been determined, first.
+# Note: the QEMU path is returned without leading slash (/).
+# See brp_determine_qemu
+#
+function br_get_rootfs_qemu()
+{
+    [ -n "$BRP_ROOTFS_QEMU" ] && echo -n "${BRP_ROOTFS_QEMU##/}"
 }
 
 #
@@ -226,23 +281,12 @@ function brp_copy_qemu_to_rootfs()
 #
 function brp_setup_qemu_in_rootfs()
 {
-    BRP_BINFMT=$(brp_determine_qemu)
-    # system QEMU binary found (or something passing for it anyway)
-    # copy it to rootfs, preserving the same path in chroot.
-    if [ $? -eq 0 -a -n "$BRP_BINFMT" ];
-        brp_copy_qemu_to_rootfs "$BRP_BINFMT" "$BRP_BINFMT" || \
-            fail "Unable to copy QEMU binary: '$BRP_BINFMT'"
-    #
-    # manually configured QEMU binaries may live in developer home directories
-    # or other non-standard locations. Fix up paths inside the chroot to
-    # pretend the binaries are from /usr/bin instead
-    #
-    elif [ -n "$BRP_BINFMT" ];
-        brp_copy_qemu_to_rootfs \
-            "/usr/bin/$(basename "$BRP_BINFMT")" \
-            "$BRP_BINFMT" || \
-            fail "Unable to copy QEMU binary: '$BRP_BINFMT'"
-    else
-        fail "Unable to determine QEMU!"
+    brp_determine_qemu
+    if [ -n "$BRP_BINFMT" ]; then
+        mkdir -p "${ROOTDIR}/$(dirname "$(br_get_rootfs_qemu)")" && \
+        cp "$(br_get_host_qemu)" "${ROOTDIR}/$(br_get_rootfs_qemu)" || \
+            fail "Unable to copy QEMU binary: '$BRP_BINFMT'
+From host: $(br_get_host_qemu)
+To rootfs: ${ROOTDIR}/$(br_get_rootfs_qemu)"
     fi
 }
