@@ -4,6 +4,7 @@
 #              multistrap, and qemu usermode emulation and create a disk image
 #              using libguestfs
 #
+# Copyright (C) 2016      Johan Ouwerkerk <jm.ouwerkerk@gmail.com>
 # Copyright (C) 2014-2015 David Lechner <david@lechnology.com>
 # Copyright (C) 2014-2015 Ralph Hempel <rhempel@hempeldesigngroup.com>
 #
@@ -19,39 +20,60 @@
 # http://twitter.com/kvz
 #
 
-### Configuration
+### Runtime
 #####################################################################
+set -e
+
+# Bash will remember & return the highest exitcode in a chain of pipes.
+set -o pipefail
 
 # Environment variables
 [ -z "${LOG_LEVEL}" ] && LOG_LEVEL="3" # 4 = debug -> 0 = fail
 
-# Commandline options. This defines the usage page
+#
+# Get the brickstrap source directory
+#
+function br_script_path()
+{
+    SCRIPT_PATH=$(readlink -f "$0")
+    SCRIPT_PATH=$(dirname "$SCRIPT_PATH")
+    echo -n "$SCRIPT_PATH"
+}
 
-read -r -d '' usage <<-'EOF'
-  usage: brickstrap [-b <board>] [-d <dir>] <command>
+. "$(br_script_path)/brickstrap-components.sh"
+
+# Commandline options. This defines the usage page
+BRP_USAGE=$(cat <<'EOF'
+Usage: brickstrap -p <project> [-c <component>] [-d <dir>] <command>
 
 Options
 -------
--b <board> Directory that contains board definition. (Default: ev3dev-jessie)
--d <dir>   The name of the directory for the rootfs. Note: This is also
-           used for the .tar and .img file names.
--f         Force overwriting existing files/directories.
--h         Help. (You are looking at it.)
+-c <component> Select components from the project directory.
+               Multiple components may be selected by specifying multiple '-c'
+               options; at least one component must be specified.
+-d <dir>       The name of the directory for the rootfs.
+               Note: This is also used for the .tar and .img file names.
+-p <project>   Directory which contains the brickstrap configuration (project).
+               This option is required and should occur exactly once.
+               Values are either a path to the project directory or the name of
+               an example project shipped with brickstrap by default.
+-f             Force overwriting existing files/directories.
+-h             Help. (You are looking at it.)
 
   Commands
   --------
   create-conf          generate the multistrap.conf file
-* simulate-multistrap  run multistrap with the --simulate option (for debugging)
+* simulate-multistrap  debug/dry-run of multistrap using its --simulate option
   run-multistrap       run multistrap (creates rootfs and downloads packages)
-  copy-root            copy files from board definition folder to the rootfs
+  copy-root            copy files from project definition folder to the rootfs
   configure-packages   configure the packages in the rootfs
-* run-hook <hook>      run a single hook in the board configuration folder
-  run-hooks            run all of the hooks in the board configuration folder
+* run-hook <hook>      run a single hook in the project configuration folder
+  run-hooks            run all of the hooks in the project configuration folder
 * create-rootfs        run all of the above commands (except *) in order
   create-tar           create a tar file from the rootfs folder
   create-image         create a disk image file from the tar file
-  create-report        run custom reporting script <board>/custom-report.sh
-* shell                run a bash shell in the rootfs
+  create-report        run custom reporting script <project>/custom-report.sh
+* shell [shell]        run the given shell in the rootfs (default is bash).
 * delete               deletes all of the files created by other commands
   all                  run all of the above commands (except *) in order
 
@@ -75,11 +97,12 @@ Options
   EV3DEV_RASPBIAN_MIRROR  Specifies the ev3dev/raspbian mirror used by apt
                           default: http://ev3dev.org/raspbian
                           (applies to create-conf only)
+
 EOF
+);
 
 ### Functions
 #####################################################################
-
 
 function _fmt () {
   color_info="\x1b[32m"
@@ -94,7 +117,7 @@ function _fmt () {
 
   color_reset="\x1b[0m"
   if [ "${TERM}" != "xterm" ] || [ -t 1 ]; then
-    # Don't use colors on pipes on non-recognized terminals
+    # Don't use colours when using pipes in unrecognised terminals
     color=""
     color_reset=""
   fi
@@ -107,9 +130,11 @@ function warn ()  { [ "${LOG_LEVEL}" -ge 2 ] && echo "$(_fmt warn) ${@}"  || tru
 function info ()  { [ "${LOG_LEVEL}" -ge 3 ] && echo "$(_fmt info) ${@}"  || true;         }
 function debug () { [ "${LOG_LEVEL}" -ge 4 ] && echo "$(_fmt debug) ${@}" || true;         }
 
-function help() {
-    echo >&2 "${@}"
-    echo >&2 "  ${usage}"
+function brp_help() {
+    if [ $# -ge 1 ]; then
+        echo >&2 "${@}"
+    fi
+    echo >&2 "${BRP_USAGE}"
     echo >&2 ""
 }
 
@@ -120,96 +145,170 @@ function help() {
 ### are simply ignored
 #####################################################################
 
-BOARDDIR="ev3-ev3dev-jessie"
-
-while [ $# -gt 0 ] ; do
-    while getopts "fb:d:" opt; do
-        case "$opt" in
-           f) FORCE=true;;
-           b) BOARDDIR="$OPTARG";;
-           d) ROOTDIR="$OPTARG";;
-          \?) # unknown flag
-                help
+function brp_parse_cli_options()
+{
+    while [ $# -gt 0 ] ; do
+        while getopts "fhc:d:p:" BRP_OPT; do
+            case "$BRP_OPT" in
+            f) FORCE=true;;
+            h)
+                brp_help
+                exit 0
+            ;;
+            p)
+                if [ -z "$OPTARG" ]; then
+                    brp_help 'Empty project names are invalid'
+                    exit 1
+                elif [ -z "$BR_PROJECT" ]; then
+                    BR_PROJECT="$OPTARG"
+                else
+                    brp_help "Duplicate project: -$BRP_OPT '$OPTARG'.
+Project was: '$BR_PROJECT'"
+                    exit 1
+                fi
+            ;;
+            c)
+                if [ -z "$OPTARG" ]; then
+                    brp_help 'Empty component names are invalid'
+                    exit 1
+                elif [ -z "$BR_COMPONENTS" ]; then
+                    BR_COMPONENTS="'$OPTARG'"
+                elif echo "$BR_COMPONENTS" | fgrep -q "'$OPTARG'"; then
+                    warn "Ignoring duplicate component: -$BRP_OPT '$OPTARG'"
+                else
+                    BR_COMPONENTS="$BR_COMPONENTS '$OPTARG'"
+                fi
+            ;;
+            d) ROOTDIR="$OPTARG";;
+            \?) # unknown flag or missing argument
+                brp_help
                 exit 1
             ;;
-        esac
+            esac
+        done
+
+        shift $((OPTIND-1))
+
+        if [ "$BRP_CMD" == "run-hook" ] || [ "$BRP_CMD" == "shell" ]; then
+            BRP_CMD_ARG="$1"
+        fi
+
+        BRP_CMD="${BRP_CMD:=$1}"
+
+        shift 1
+        OPTIND=1
     done
+}
 
-    shift $((OPTIND-1))
-
-    if [ "${cmd}" == "run-hook" ]; then
-      run_hook_arg=$1
+function brp_sanity_check_cli_options()
+{
+    if [ $# -eq 0 -o -z "$1" ]; then
+        brp_help 'No command specified'
+        exit 1
+    elif [ "$1" = "run-hook" ] && [ $# -eq 1 -o -z "$2" ]; then
+        brp_help 'No hook specified'
+        exit 1
     fi
+    debug "cmd: $1"
+}
 
-    cmd=${cmd:=$1}
+function brp_validate_cli_options()
+{
+    brp_sanity_check_cli_options "$@" && \
+    brp_validate_project_name && \
+    brp_validate_component_names
+}
 
-    shift 1
-    OPTIND=1
-done
-
-[ "${cmd}" = "" ] && help && exit 1
-[ "${cmd}" = "run-hook" ] && [ "${run_hook_arg}" = "" ] && help && exit 1
-debug "cmd: ${cmd}"
 
 #####################################################################
 ### Set up the variables for the commands
 
-SCRIPT_PATH=$(dirname $(readlink -f "$0"))
+function brp_init_env()
+{
 
-debug "SCRIPT_PATH: ${SCRIPT_PATH}"
+    debug "SCRIPT_PATH: $(br_script_path)"
 
-export DEBIAN_FRONTEND=noninteractive
-export DEBCONF_NONINTERACTIVE_SEEN=true
-export LC_ALL=C LANGUAGE=C LANG=C
-export PATH=$PATH:/usr/local/sbin:/usr/sbin:/sbin
+    export DEBIAN_FRONTEND=noninteractive
+    export DEBCONF_NONINTERACTIVE_SEEN=true
+    export LC_ALL=C LANGUAGE=C LANG=C
+    export PATH=$PATH:/usr/local/sbin:/usr/sbin:/sbin
 
-[ -r "${BOARDDIR}" ] || BOARDDIR="${SCRIPT_PATH}/${BOARDDIR}"
-[ -r "${BOARDDIR}" ] || fail "cannot find target directory: ${BOARDDIR}"
-[ -r "${BOARDDIR}/multistrap.conf" ] \
-    || fail "cannot read multistrap config: ${BOARDDIR}/multistrap.conf"
+    br_list_paths "multistrap.conf" -r >/dev/null || \
+        fail "Unable to locate a readable 'multistrap.conf'"
 
-BOARDDIR=$(readlink -f "${BOARDDIR}")
+    for SYSTEM_KERNEL_IMAGE in /boot/vmlinuz-*; do
+        [ -r "${SYSTEM_KERNEL_IMAGE}" ] \
+            || fail "Cannot read ${SYSTEM_KERNEL_IMAGE} needed by guestfish." \
+            "Set permission with 'sudo chmod +r /boot/vmlinuz-*'."
+    done
 
-for SYSTEM_KERNEL_IMAGE in /boot/vmlinuz-*; do
-    [ -r "${SYSTEM_KERNEL_IMAGE}" ] \
-        || fail "Cannot read ${SYSTEM_KERNEL_IMAGE} needed by guestfish." \
-        "Set permission with 'sudo chmod +r /boot/vmlinuz-*'."
-done
+    if [ "$(sysctl -ne kernel.unprivileged_userns_clone)" = "0" ]; then
+        fail "Unprivileged user namespace clone is disabled. Enable it by running" \
+            "'sudo sysctl -w kernel.unprivileged_userns_clone=1'."
+    fi
 
-if [[ "$(sysctl -ne kernel.unprivileged_userns_clone)" == "0" ]]; then
-    fail "Unprivileged user namespace clone is disabled. Enable it by running" \
-        "'sudo sysctl -w kernel.unprivileged_userns_clone=1'."
-fi
+    # source project config file
+    if br_list_paths config -r >/dev/null; then
+        br_for_each_path "$(br_list_paths config -r)" brp_run_hook_impl \
+            'loading'
+    fi
 
-# source board config file
-[ -r "${BOARDDIR}/config" ] && . "${BOARDDIR}/config"
+    # overwrite target options by commandline options
+    DEFAULT_ROOTDIR=$(readlink -f "$(basename "$BR_PROJECT")-$(date +%F)")
+    ROOTDIR=$(readlink -m ${ROOTDIR:-$DEFAULT_ROOTDIR})
+    MULTISTRAPCONF=$(pwd)/$(basename ${ROOTDIR}).multistrap.conf
+    TARBALL=$(pwd)/$(basename ${ROOTDIR}).tar
+    IMAGE=$(pwd)/$(basename ${ROOTDIR}).img
 
-# overwrite target options by commandline options
-DEFAULT_ROOTDIR=$(readlink -f "$(basename ${BOARDDIR})-$(date +%F)")
-ROOTDIR=$(readlink -m ${ROOTDIR:-$DEFAULT_ROOTDIR})
-MULTISTRAPCONF=$(pwd)/$(basename ${ROOTDIR}).multistrap.conf
-TARBALL=$(pwd)/$(basename ${ROOTDIR}).tar
-IMAGE=$(pwd)/$(basename ${ROOTDIR}).img
+    QEMU_STATIC=$(which qemu-arm-static)
+    USER_UNSHARE="$(br_script_path)/user-unshare"
+    CHROOTCMD="${USER_UNSHARE} --mount-host-rootfs=${ROOTDIR}/host-rootfs -- chroot ${ROOTDIR}"
+    CHROOTBINDCMD="${USER_UNSHARE} --mount-proc=${ROOTDIR}/proc --mount-sys=${ROOTDIR}/sys --mount-dev=${ROOTDIR}/dev --mount-host-rootfs=${ROOTDIR}/host-rootfs -- chroot ${ROOTDIR}"
+}
 
-QEMU_STATIC=$(which qemu-arm-static)
-USER_UNSHARE="${SCRIPT_PATH}/user-unshare"
-CHROOTCMD="${USER_UNSHARE} --mount-host-rootfs=${ROOTDIR}/host-rootfs -- chroot ${ROOTDIR}"
-CHROOTBINDCMD="${USER_UNSHARE} --mount-proc=${ROOTDIR}/proc --mount-sys=${ROOTDIR}/sys --mount-dev=${ROOTDIR}/dev --mount-host-rootfs=${ROOTDIR}/host-rootfs -- chroot ${ROOTDIR}"
+function brp_read_package_file()
+{
+    # check that the package file hasn't been blacklisted
+    if echo "$BLACKLIST_PACKAGE_FILES" | fgrep -q "$(basename "$1")"; then
+        return 0
+    fi
+    while IFS='' read -r BRP_CUR_LINE || [ -n "$BRP_CUR_LINE" ]; do
+        case "$BRP_CUR_LINE" in
+        \#*|\;*) # permit comments: lines starting with # or ; are ignored.
+        ;;
+        *)
+            # avoid redundant spaces, i.e.  empty lines are ignored.
+            # also check that the package line hasn't been blacklisted
+            if [ -z "$BRP_CUR_LINE" ] || \
+                echo "$BLACKLIST_PACKAGES" | fgrep -q "$BRP_CUR_LINE"; then
+                continue
+            else
+                PACKAGES="${PACKAGES} $BRP_CUR_LINE"
+            fi
+        ;;
+        esac
+    done < "$1"
+}
 
-### Runtime
-#####################################################################
+function brp_read_multistrap_conf_file()
+{
+    while read BRP_CUR_LINE; do
+        eval echo "$BRP_CUR_LINE" >> "$MULTISTRAPCONF"
+        if echo "$BRP_CUR_LINE" | egrep -q "^aptpreferences="
+        then
+                multistrapconf_aptpreferences=true
+        fi
+        if echo "$BRP_CUR_LINE" | egrep -q "^cleanup=true"
+        then
+               multistrapconf_cleanup=true
+        fi
+    done < "$1"
+}
 
-set -e
-
-# Bash will remember & return the highest exitcode in a chain of pipes.
-# This way you can catch the error in case mysqldump fails in `mysqldump |gzip`
-set -o pipefail
-
-#####################################################################
-
-function create-conf() {
+function brp_create_conf() {
     #
-    # Set the defaults for mirrors as promised by help, if these haven't been configured for the board yet.
+    # Set the defaults for mirrors as promised by help, if these have not been
+    # configured for the project yet.
     #
     if [ -z "${DEBIAN_MIRROR}" ]; then
         DEBIAN_MIRROR="http://httpredir.debian.org/debian"
@@ -224,58 +323,28 @@ function create-conf() {
         EV3DEV_RASPBIAN_MIRROR="http://ev3dev.org/raspbian"
     fi
     info "Creating multistrap configuration file..."
-    debug "BOARDDIR: ${BOARDDIR}"
-    for f in ${BOARDDIR}/packages/*; do
-        # check that the package file hasn't been blacklisted
-        if echo "$BLACKLIST_PACKAGE_FILES" | grep -q $(basename "$f"); then
-            continue
-        fi
-        #
-        # Use read || [ -n "$line" ] to make sure the last line is also fed to the do-block.
-        # Otherwise packages may be omitted from files which lack a trailing newline,
-        # because of the non-zero exit code of read which would cause while to skip the do-block & terminate the loop.
-        #
-        while IFS='' read -r line || [ -n "$line" ]; do
-            case "$line" in
-            \#*|\;*) # permit comments: lines starting with # or ; are ignored.
-            ;;
-            *)
-                # avoid redundant spaces, i.e.  empty lines are ignored.
-                # also check that the package line hasn't been blacklisted
-                if [ -z "$line" ] || echo "$BLACKLIST_PACKAGES" | grep -q "$line"; then
-                    continue
-                else
-                    PACKAGES="${PACKAGES} $line"
-                fi
-            ;;
-            esac
-        done < "$f"
-    done
+    debug "br_project_dir: $(br_project_dir)"
+
+    if br_list_directories packages >/dev/null; then
+        br_for_each_path_iterate_directories \
+            "$(br_list_directories packages)" brp_read_package_file
+    fi
 
     multistrapconf_aptpreferences=false
     multistrapconf_cleanup=false;
 
     debug "creating ${MULTISTRAPCONF}"
     echo -n > "${MULTISTRAPCONF}"
-    while read line; do
-        eval echo $line >> "$MULTISTRAPCONF"
-        if echo $line | grep -E -q "^aptpreferences="
-        then
-                multistrapconf_aptpreferences=true
-        fi
-        if echo $line | grep -E -q "^cleanup=true"
-        then
-               multistrapconf_cleanup=true
-        fi
-    done < $BOARDDIR/multistrap.conf
+    br_for_each_path "$(br_list_paths multistrap.conf -f)" \
+        brp_read_multistrap_conf_file
 }
 
-function simulate-multistrap() {
+function brp_simulate_multistrap() {
     MSTRAP_SIM="--simulate"
-    run-multistrap
+    brp_run_multistrap
 }
 
-function run-multistrap() {
+function brp_run_multistrap() {
     info "running multistrap..."
     [ -z ${FORCE} ] && [ -d "${ROOTDIR}" ] && \
         fail "${ROOTDIR} already exists. Use -f option to overwrite."
@@ -285,22 +354,36 @@ function run-multistrap() {
         warn "Removing existing rootfs ${ROOTDIR}"
         ${USER_UNSHARE} -- rm -rf ${ROOTDIR}
     fi
-    ${USER_UNSHARE} -- multistrap ${MSTRAP_SIM} --file "${MULTISTRAPCONF}" --dir ${ROOTDIR} --no-auth
+    ${USER_UNSHARE} -- multistrap ${MSTRAP_SIM} --file "${MULTISTRAPCONF}" \
+        --dir ${ROOTDIR} --no-auth
     cp ${QEMU_STATIC} ${ROOTDIR}/usr/bin/
 }
 
-function copy-root() {
-    info "Copying root files from BOARDDIR definition..."
-    debug "BOARDDIR: ${BOARDDIR}"
+function brp_copy_to_root_dir() {
+    cp --recursive --dereference "$1/"* "${ROOTDIR}/"
+}
+
+function brp_copy_root() {
+    info "Copying root files from project definition..."
+    debug "br_project_dir: $(br_project_dir)"
     debug "ROOTDIR: ${ROOTDIR}"
-    [ ! -d "${ROOTDIR}" ] && fail "${ROOTDIR} does not exist."
-    # copy initial directory tree - dereference symlinks
-    if [ -r "${BOARDDIR}/root" ]; then
-        cp --recursive --dereference "${BOARDDIR}/root/"* "${ROOTDIR}/"
+    if [ ! -d "${ROOTDIR}" ]; then
+        fail "${ROOTDIR} does not exist."
+    elif br_list_directories root >/dev/null; then
+        # copy initial directory tree - dereference symlinks
+        br_for_each_path "$(br_list_directories root)" brp_copy_to_root_dir
+    else
+        info "Skipping: no such directory: root"
     fi
 }
 
-function configure-packages () {
+function brp_preseed_debconf() {
+    cp "$1" "${ROOTDIR}/tmp/debconfseed.txt"
+    ${CHROOTCMD} debconf-set-selections /tmp/debconfseed.txt
+    rm "${ROOTDIR}/tmp/debconfseed.txt"
+}
+
+function brp_configure_packages () {
     info "Configuring packages..."
     [ ! -d "${ROOTDIR}" ] && fail "${ROOTDIR} does not exist."
 
@@ -311,32 +394,26 @@ function configure-packages () {
     ${CHROOTCMD} ln -sf /usr/bin/gawk /usr/local/bin/awk
 
     # preseed debconf
-    info "preseed debconf"
-    if [ -r "${BOARDDIR}/debconfseed.txt" ]; then
-        cp "${BOARDDIR}/debconfseed.txt" "${ROOTDIR}/tmp/"
-        ${CHROOTCMD} debconf-set-selections /tmp/debconfseed.txt
-        rm "${ROOTDIR}/tmp/debconfseed.txt"
+    if br_list_paths debconfseed.txt -r >/dev/null; then
+        info "preseed debconf"
+        br_for_each_path "$(br_list_paths debconfseed.txt -r)" \
+            brp_preseed_debconf
     fi
 
     # run preinst scripts
     info "running preinst scripts..."
-    script_dir="${ROOTDIR}/var/lib/dpkg/info"
-    for script in ${script_dir}/*.preinst; do
-        blacklisted="false"
-        if [ -r "${BOARDDIR}/preinst.blacklist" ]; then
-            while read line; do
-                if [ "${script##$script_dir}" = "/${line}.preinst" ]; then
-                    blacklisted="true"
-                    info "skipping ${script##$script_dir} (blacklisted)"
-                    break
-                fi
-            done < "${BOARDDIR}/preinst.blacklist"
+    BRP_script_dir="${ROOTDIR}/var/lib/dpkg/info"
+    BRP_preinst_blacklist="$(br_cat_files preinst.blacklist)"
+    for BRP_script in ${BRP_script_dir}/*.preinst; do
+        if echo "$BRP_preinst_blacklist" | \
+            fgrep -xq "$(basename "$BRP_script" .preinst)"; then
+            info "skipping $(basename "$BRP_script") (blacklisted)"
+        else
+            info "running $(basename "$BRP_script")"
+                DPKG_MAINTSCRIPT_NAME=preinst \
+                DPKG_MAINTSCRIPT_PACKAGE="`basename ${BRP_script} .preinst`" \
+                    ${CHROOTBINDCMD} ${BRP_script##$ROOTDIR} install
         fi
-        [ "${blacklisted}" = "true" ] && continue
-        info "running ${script##$script_dir}"
-        DPKG_MAINTSCRIPT_NAME=preinst \
-        DPKG_MAINTSCRIPT_PACKAGE="`basename ${script} .preinst`" \
-            ${CHROOTBINDCMD} ${script##$ROOTDIR} install
     done
 
     # run dpkg `--configure -a` twice because of errors during the first run
@@ -349,70 +426,124 @@ function configure-packages () {
     ${CHROOTCMD} rm -f /usr/local/bin/awk
 }
 
-function run-hook() {
-  info "running hook ${1##${BOARDDIR}/hooks/}"
-  . ${1}
-}
-
-function run-hooks() {
-    info "Running hooks..."
-    [ ! -d "${ROOTDIR}" ] && fail "${ROOTDIR} does not exist."
-
-    # source hooks
-    if [ -r "${BOARDDIR}/hooks" ]; then
-        for f in "${BOARDDIR}"/hooks/*; do
-            run-hook ${f}
-        done
-    fi
-}
-
-# Runs a status/config info reporting hook, to be called at the end of the brickstrap process.
-# This permits the user to aggregate important info about the build in a single, convenient report.
-# (E.g. root passwd, default account username+password, hostname, key fingerprints?)
-function create-report() {
-    DUMP_INFO_HOOK_SCRIPT="${BOARDDIR}/custom-report.sh"
-    if [ -r "${DUMP_INFO_HOOK_SCRIPT}" ]; then
-        info "Running custom reporting script..."
-        . "${DUMP_INFO_HOOK_SCRIPT}"
-        info "Done with custom reporting script."
+function brp_report_hooks_exit_code()
+{
+    if [ $1 -ne 0 ]; then
+        error "script failed with exit code $1: '$2'"
+        return $1
     else
-        info "Skipping custom report, no such script. (${DUMP_INFO_HOOK_SCRIPT})"
+        info "script completed successfully: '$2'"
     fi
 }
 
-function create-tar() {
+function brp_run_hook_impl()
+{
+    if [ -n "$2" ]; then
+        info "$1: $2"
+        . "$2"
+        brp_report_hooks_exit_code "$?" "$2"
+    else
+        info "runnning hook: $1"
+        . "$1"
+        brp_report_hooks_exit_code "$?" "$1"
+    fi
+}
+
+function brp_run_hook() {
+    # completely bogus
+    if [ $# -eq 0 -o -z "$1" ]; then
+        brp_help "Empty hook names are invalid"
+        exit 1
+    elif [ ! -d "${ROOTDIR}" ]; then
+        fail "${ROOTDIR} does not exist."
+    # a simple hook name which may or may not map to multiple hooks
+    # given the components selection
+    elif [ "$(basename "$1")" = "$1" ] || \
+        [ "hooks/$(basename "$1")" = "$1" ]; then
+        br_for_each_path "$(br_find_paths "hooks/$(basename "$1")" -f)" \
+            brp_run_hook_impl
+    # probably a full path to a single hook script,
+    # should be executed on its own
+    elif br_find_paths "hooks/$(basename "$1")" -f | \
+            fgrep -xq "$(readlink -f "$1")"; then
+        brp_run_hook_impl "$(readlink -f "$1")"
+    # probably bogus
+    else
+        fail "Invalid hook: '$1'.
+Not part of '$BR_PROJECT' with the given component selection: $BR_COMPONENTS"
+    fi
+}
+
+function brp_run_hooks() {
+    if [ ! -d "${ROOTDIR}" ]; then
+        fail "${ROOTDIR} does not exist."
+    elif br_list_directories "hooks" >/dev/null; then
+        info "Running hooks..."
+        br_for_each_path_iterate_directories "$(br_list_directories "hooks")" \
+            brp_run_hook_impl
+    else
+        info "Skipping hooks, no such directory: hooks"
+    fi
+}
+
+# Runs a status/config info reporting hook, to be called at the end of the
+# brickstrap process. This permits the user to aggregate important info about
+# the build in a single, convenient report. (E.g. root passwd, default account
+# username+password, hostname, key fingerprints?)
+function brp_create_report() {
+    if br_list_paths "custom-report.sh" -r >/dev/null; then
+        info "Running custom reporting scripts..."
+        br_for_each_path "$(br_list_paths custom-report.sh -r)" \
+            brp_run_hook_impl 'executing'
+        info "Done with custom reporting scripts."
+    else
+        info "Skipping custom report, no such scripts: custom-report.sh"
+    fi
+}
+
+function brp_copy_to_tar_only() {
+    cp -r "$1/." "${ROOTDIR}/tar-only/"
+}
+
+function brp_create_tar() {
     info "Creating tar of rootfs"
     debug "ROOTDIR: ${ROOTDIR}"
     debug "TARBALL: ${TARBALL}"
     [ ! -d "${ROOTDIR}" ] && fail "${ROOTDIR} does not exist."
     [ -z ${FORCE} ] && [ -f "${TARBALL}" ] \
 	    && fail "${TARBALL} exists. Use -f option to overwrite."
-    # need to generate tar inside fakechroot so that absolute symlinks are correct
     info "creating tarball ${TARBALL}"
-    EXCLUDE_LIST=/host-rootfs/${BOARDDIR}/tar-exclude
-    info "Excluding files:
-$(${CHROOTCMD} cat ${EXCLUDE_LIST})"
+
+    info "Excluding files: "
+    BRP_EXCLUDE_LIST="${ROOTDIR}/tar-exclude"
+    br_cat_files tar-exclude | tee "$BRP_EXCLUDE_LIST"
+
+    # need to generate tar inside fakechroot
+    # so that absolute symlinks are correct
+
     ${CHROOTCMD} tar cpf /host-rootfs/${TARBALL} \
-        --exclude=host-rootfs --exclude=usr/bin/$(basename ${QEMU_STATIC}) --exclude=tar-only \
-        --exclude-from=${EXCLUDE_LIST} .
-    if [ -d "${BOARDDIR}/tar-only" ]; then
-      cp -r "${BOARDDIR}/tar-only/." "${ROOTDIR}/tar-only/"
-    fi
-    if [ -d "${ROOTDIR}/tar-only" ]; then
-      info "Adding tar-only files:"
-      ${CHROOTCMD} tar rvpf /host-rootfs/${TARBALL} -C /tar-only .
+        --exclude=host-rootfs --exclude=usr/bin/$(basename ${QEMU_STATIC}) \
+        --exclude=tar-only --exclude=${BRP_EXCLUDE_LIST##$ROOTDIR/} \
+        --exclude-from=${BRP_EXCLUDE_LIST##$ROOTDIR} .
+
+    if br_list_directories tar-only >/dev/null; then
+        br_for_each_path "$(br_list_directories tar-only)" brp_copy_to_tar_only
+        if [ -d "${ROOTDIR}/tar-only" ]; then
+            info "Adding tar-only files:"
+            ${CHROOTCMD} tar rvpf /host-rootfs/${TARBALL} -C /tar-only .
+        fi
     fi
 }
 
-function create-rootfs () {
-    create-conf
-    run-multistrap
-    copy-root
-    configure-packages
-    run-hooks
+function brp_create_rootfs () {
+    brp_create_conf
+    brp_run_multistrap
+    brp_copy_root
+    brp_configure_packages
+    brp_run_hooks
 }
 
-function create-image() {
+function brp_create_image() {
     info "Creating image file..."
     debug "TARBALL: ${TARBALL}"
     debug "IMAGE: ${IMAGE}"
@@ -445,7 +576,7 @@ function create-image() {
     mv test1.img ${IMAGE}
 }
 
-function delete-all() {
+function brp_delete_all() {
     info "Deleting all files..."
     ${USER_UNSHARE} -- rm -rf ${ROOTDIR}
     rm -f ${MULTISTRAPCONF}
@@ -454,33 +585,59 @@ function delete-all() {
     info "Done."
 }
 
-function run-shell() {
-    [ ! -d "${ROOTDIR}" ] && fail "${ROOTDIR} does not exist."
-    debian_chroot="brickstrap" PROMPT_COMMAND="" HOME=/root ${CHROOTBINDCMD} bash
+function brp_run_shell() {
+    if [ ! -d "${ROOTDIR}" ]; then
+        fail "${ROOTDIR} does not exist."
+    # permit the user to select the shell manually
+    elif [ -n "$1" ]; then
+        info "Entering chosen shell: '$1'"
+        debian_chroot="brickstrap" PROMPT_COMMAND="" HOME=/root \
+            ${CHROOTBINDCMD} "$1"
+    # by default assume bash as shell
+    else
+        info "Entering default shell"
+        debian_chroot="brickstrap" PROMPT_COMMAND="" HOME=/root \
+            ${CHROOTBINDCMD} bash
+    fi
 }
 
-case "${cmd}" in
-    create-conf)         create-conf;;
-    simulate-multistrap) simulate-multistrap;;
-    run-multistrap)      run-multistrap;;
-    copy-root)           copy-root;;
-    configure-packages)  configure-packages;;
-    run-hook)            run-hook ${BOARDDIR}/hooks/${run_hook_arg};;
-    run-hooks)           run-hooks;;
-    create-rootfs)       create-rootfs;;
-    create-tar)          create-tar;;
-    create-image)        create-image;;
-    create-report)       create-report;;
-    delete)              delete-all;;
+function brp_run_command()
+{
+    [ $# -ge 1 ] && case "$1" in
+        create-conf)         brp_create_conf;;
+        simulate-multistrap) brp_simulate_multistrap;;
+        run-multistrap)      brp_run_multistrap;;
+        copy-root)           brp_copy_root;;
+        configure-packages)  brp_configure_packages;;
+        run-hook)            brp_run_hook "$2";;
+        run-hooks)           brp_run_hooks;;
+        create-rootfs)       brp_create_rootfs;;
+        create-tar)          brp_create_tar;;
+        create-image)        brp_create_image;;
+        create-report)       brp_create_report;;
+        delete)              brp_delete_all;;
+        shell)               brp_run_shell "$2";;
 
-    shell) run-shell;;
+        all)
+            brp_create_rootfs
+            brp_create_tar
+            brp_create_image
+            brp_create_report
+        ;;
 
-    all)
-        create-rootfs
-        create-tar
-        create-image
-        create-report
-    ;;
+        *)
+            brp_help "Unknown command: '$1'."
+            exit 1
+        ;;
+    esac
+}
 
-    *) fail "Unknown command. See brickstrap -h for list of commands.";;
-esac
+function brp_run()
+{
+    brp_parse_cli_options "$@" && \
+    brp_validate_cli_options "$BRP_CMD" "$BRP_CMD_ARG" && \
+    brp_init_env && \
+    brp_run_command "$BRP_CMD" "$BRP_CMD_ARG"
+}
+
+brp_run "$@"
