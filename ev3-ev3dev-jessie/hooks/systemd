@@ -1,22 +1,22 @@
 # make sure serial-getty@.service does not try to use the serial ports because
 # we use them for other things
-$CHROOTBINDCMD systemctl mask serial-getty@ttyS0.service
-$CHROOTBINDCMD systemctl mask serial-getty@ttyS1.service
-$CHROOTBINDCMD systemctl mask serial-getty@ttyS2.service
-$CHROOTBINDCMD systemctl mask serial-getty@ttySU0.service
-$CHROOTBINDCMD systemctl mask serial-getty@ttySU1.service
+br_chroot_bind systemctl mask serial-getty@ttyS0.service
+br_chroot_bind systemctl mask serial-getty@ttyS1.service
+br_chroot_bind systemctl mask serial-getty@ttyS2.service
+br_chroot_bind systemctl mask serial-getty@ttySU0.service
+br_chroot_bind systemctl mask serial-getty@ttySU1.service
 
 # prevent openrobertalab from running
-$CHROOTBINDCMD systemctl mask openrobertalab.service
+br_chroot_bind systemctl mask openrobertalab.service
 
 # disable nfs from running by default since most won't use it
-$CHROOTBINDCMD systemctl disable nfs-common.service
-$CHROOTBINDCMD systemctl disable rpcbind.service
+br_chroot_bind systemctl disable nfs-common.service
+br_chroot_bind systemctl disable rpcbind.service
 
 # disable smbd from running by default. Want to leave nmbd on though.
-$CHROOTBINDCMD systemctl disable smbd.service
+br_chroot_bind systemctl disable smbd.service
 # we really don't want this running - it causes a long timeout on boot
-$CHROOTBINDCMD systemctl mask samba-ad-dc.service
+br_chroot_bind systemctl mask samba-ad-dc.service
 
 # enable zram swap file
-$CHROOTBINDCMD systemctl enable zram_swap.service
+br_chroot_bind systemctl enable zram_swap.service

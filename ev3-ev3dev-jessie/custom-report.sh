@@ -24,6 +24,6 @@ Included Packages
 -----------------
 
 \`\`\`
-$($CHROOTCMD dpkg -l)
+$(br_chroot dpkg -l)
 \`\`\`
 EOF

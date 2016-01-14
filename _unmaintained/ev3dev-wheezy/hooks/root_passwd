@@ -1,4 +1,4 @@
 # set root password
-$CHROOTCMD chpasswd << EOF
+br_chroot chpasswd << EOF
 root:r00tme
 EOF

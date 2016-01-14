@@ -1,7 +1,7 @@
 echo -e -n "\nFONT='Lat15-TomThumb4x6.psf.gz'" >> $ROOTDIR/etc/default/console-setup
-$CHROOTCMD setupcon --save-only
+br_chroot setupcon --save-only
 # keyboard-setup takes long time during boot, so disabling for now.
-$CHROOTCMD update-rc.d keyboard-setup disable
+br_chroot update-rc.d keyboard-setup disable
 # `kbd` does the same thing as `console-setup`/`keyboard-setup`, so we disable it too,
 # Also, `kbd` breaks systemd, so we really don't want it enabled.
-$CHROOTCMD update-rc.d kbd disable
+br_chroot update-rc.d kbd disable

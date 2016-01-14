@@ -1,2 +1,2 @@
-$CHROOTCMD useradd user -p `openssl passwd -crypt -salt // ""` -s /bin/bash --create-home
-$CHROOTCMD usermod -a -G audio,dialout user
+br_chroot useradd user -p `openssl passwd -crypt -salt // ""` -s /bin/bash --create-home
+br_chroot usermod -a -G audio,dialout user

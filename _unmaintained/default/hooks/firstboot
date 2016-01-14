@@ -22,4 +22,4 @@ done
 __END__
 
 chmod +x $ROOTDIR/etc/init.d/firstboot
-$CHROOTCMD update-rc.d firstboot start 99 S
+br_chroot update-rc.d firstboot start 99 S

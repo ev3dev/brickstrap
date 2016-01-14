@@ -1,4 +1,4 @@
 # Add default user and give them sudo powers
-$CHROOTCMD adduser --disabled-password --gecos \"\" robot
-echo "robot:maker" | $CHROOTCMD chpasswd
-$CHROOTCMD usermod -a -G sudo robot
+br_chroot adduser --disabled-password --gecos \"\" robot
+echo "robot:maker" | br_chroot chpasswd
+br_chroot usermod -a -G sudo robot
