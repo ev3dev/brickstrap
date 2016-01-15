@@ -43,6 +43,8 @@ function br_script_path()
 . "$(br_script_path)/brickstrap-argv.sh"
 . "$(br_script_path)/brickstrap-components.sh"
 . "$(br_script_path)/brickstrap-utils.sh"
+. "$(br_script_path)/brickstrap-image.sh"
+. "$(br_script_path)/brickstrap-image-drivers.sh"
 
 # Commandline options. This defines the usage page
 BRP_USAGE=$(cat <<'EOF'
@@ -61,6 +63,9 @@ Options
                an example project shipped with brickstrap by default.
 -I <image>     Optional: name of the disk image file to generate (without type
                suffix).
+-l <layout>    Optional: select disk image type to generate (partition layout).
+               If no image type is selected, a 'default' layout is used.
+               Projects may support additional custom <layout> types.
 -Q <emulator>  Optional: override which QEMU binary to use for emulation of
                foreign instruction sets.
 
@@ -177,7 +182,7 @@ function brp_help() {
 function brp_parse_cli_options()
 {
     while [ $# -gt 0 ] ; do
-        while getopts "fhc:d:p:Q:I:x:X:" BRP_OPT; do
+        while getopts "fhc:d:p:Q:I:l:x:X:" BRP_OPT; do
             case "$BRP_OPT" in
             f)
                 brp_set_single_value_opt BR_FORCE "$BR_FORCE" true \
@@ -207,6 +212,10 @@ function brp_parse_cli_options()
                 brp_set_single_value_opt BR_IMAGE_BASE_NAME \
                     "$BR_IMAGE_BASE_NAME" "$OPTARG" "-$BRP_OPT" image
             ;;
+            l)
+                brp_set_single_value_opt BR_IMAGE_TYPE "$BR_IMAGE_TYPE" \
+                    "$OPTARG" "-$BRP_OPT" 'image type'
+            ;;
             x)
                 brp_set_multi_value_opt BR_PACKAGE_BLACKLIST \
                     "$BR_PACKAGE_BLACKLIST" "$OPTARG" "-$BRP_OPT" \
@@ -226,14 +235,17 @@ function brp_parse_cli_options()
 
         shift $((OPTIND-1))
 
-        if [ "$BRP_CMD" == "run-hook" ] || [ "$BRP_CMD" == "shell" ]; then
-            BRP_CMD_ARG="$1"
+        if [ $# -gt 0 ]; then
+
+            if [ "$BRP_CMD" == "run-hook" ] || [ "$BRP_CMD" == "shell" ]; then
+                BRP_CMD_ARG="$1"
+            fi
+
+            BRP_CMD="${BRP_CMD:=$1}"
+
+            shift 1
+            OPTIND=1
         fi
-
-        BRP_CMD="${BRP_CMD:=$1}"
-
-        shift 1
-        OPTIND=1
     done
 }
 
@@ -264,7 +276,6 @@ function brp_validate_cli_options()
 
 function brp_init_env()
 {
-
     debug "SCRIPT_PATH: $(br_script_path)"
 
     export DEBIAN_FRONTEND=noninteractive
@@ -292,7 +303,14 @@ function brp_init_env()
             'loading'
     fi
 
+    # source custom-image.sh driver scripts
+    if br_list_paths custom-image.sh -r >/dev/null; then
+        br_for_each_path "$(br_list_paths custom-image.sh -r)" \
+            brp_run_hook_impl 'loading'
+    fi
+
     brp_set_destination_defaults
+    brp_validate_image_configuration
 }
 
 function brp_read_package_file()
@@ -576,41 +594,6 @@ function brp_create_rootfs () {
     brp_run_hooks
 }
 
-function brp_create_image() {
-    info "Creating image file..."
-    debug "TARBALL: $(br_tarball_path)"
-    debug "IMAGE: $(br_image_path bootroot img)"
-    debug "IMAGE_FILE_SIZE: ${IMAGE_FILE_SIZE}"
-    [ ! -f "$(br_tarball_path)" ] && fail "Could not find $(br_tarball_path)"
-    [ -z "$BR_FORCE" ] && [ -f "$(br_image_path bootroot img)" ] && \
-        fail "$(br_image_path bootroot img) already exists. Use -f option to overwrite."
-
-    # create a disk image with MBR partition table and 2 partitions.
-    # ---------------------------------------------
-    #   part | type   | fs   | size
-    # ---------------------------------------------
-    #      1 | boot   | VFAT | 48MB
-    #      2 | rootfs | ext4 | ${IMAGE_FILE_SIZE}
-    # ---------------------------------------------
-    mkdir -p "$(br_image_dir)"
-
-    guestfish -N \
-        "$(br_image_path bootroot img)"=bootroot:vfat:ext4:${IMAGE_FILE_SIZE}:48M:mbr \
-        part-set-mbr-id /dev/sda 1 0x0b : \
-        set-label /dev/sda2 EV3_FILESYS : \
-        mount /dev/sda2 / : \
-        tar-in "$(br_tarball_path)" / : \
-        mkdir-p /media/mmc_p1 : \
-        mount /dev/sda1 /media/mmc_p1 : \
-        glob mv /boot/flash/* /media/mmc_p1/ : \
-
-    # Hack to set the volume label on the vfat partition since guestfish does
-    # not know how to do that. Must be null padded to exactly 11 bytes.
-    echo -e -n "EV3_BOOT\0\0\0" | \
-        dd of="$(br_image_path bootroot img)" \
-            bs=1 seek=32811 count=11 conv=notrunc >/dev/null 2>&1
-}
-
 function brp_delete_all() {
     info "Deleting all files..."
     brp_unshare -- rm -rf "$(br_rootfs_dir)"
@@ -668,9 +651,10 @@ function brp_run_command()
 
 function brp_run()
 {
-    brp_parse_cli_options "$@" && \
-    brp_validate_cli_options "$BRP_CMD" "$BRP_CMD_ARG" && \
-    brp_init_env && \
+    brp_image_drv_register_defaults
+    brp_parse_cli_options "$@"
+    brp_validate_cli_options "$BRP_CMD" "$BRP_CMD_ARG"
+    brp_init_env
     brp_run_command "$BRP_CMD" "$BRP_CMD_ARG"
 }
 

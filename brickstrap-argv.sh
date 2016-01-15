@@ -140,7 +140,7 @@ function brp_set_destination_defaults()
     fi
 
     if [ -z "$BR_IMAGE_BASE_NAME" ]; then
-        BR_IMAGE_BASE_NAME="$(basename "$BR_DESTDIR")-$(date +%F)"
+        BRP_IMAGE_DEFAULT_NAME="$(basename "$BR_DESTDIR")-$(date +%F)"
     fi
 }
 
@@ -189,15 +189,37 @@ function br_tarball_path()
 }
 
 #
-# Look up the path to a specific disk image, identified by its type extension
+# Look up the path to a specific disk image, identified by the name of a
+# partitioning/imaging scheme and its (file) type extension
 # $1: the name of the partitioning/imaging scheme implemented in the disk image
 # $2: the file name extension used to identify the disk image type.
 #
-function br_image_path()
+function brp_image_path()
 {
     [ $# -eq 2 -a -n "$1" -a -n "$2" ] && [ -n "$BR_DESTDIR" ] && \
-        [ -n "$BR_IMAGE_BASE_NAME" ] && \
-        echo -n "$(br_image_dir)/$BR_IMAGE_BASE_NAME-$1.$2";
+        echo -n "$(br_image_dir)/$(brp_image_name "$1" "$2")"
+}
+
+#
+# Look up the (file) name for a specific disk image, identified by the name of
+# a partitioning/imaging scheme and its (file) type extension
+# $1: the name of the partitioning/imaging scheme implemented in the disk image
+# $2: the file name extension used to identify the disk image type.
+#
+function brp_image_name()
+{
+    [ $# -eq 2 -a -n "$1" -a -n "$2" ] && if [ -n "$BR_IMAGE_BASE_NAME" ]; then
+        # omit driver name when the image name is configured explicitly (-I)
+        echo -n "$BR_IMAGE_BASE_NAME.$2";
+    elif [ -n "$BRP_IMAGE_DEFAULT_NAME" ]; then
+        # add driver name in the default case, to make workflows involving
+        # multiple create-image commands easier
+        echo -n "$BRP_IMAGE_DEFAULT_NAME-$1.$2";
+    else
+        # something is very wrong, presumably brp_set_destination_defaults has
+        # not been called yet
+        return 1
+    fi
 }
 
 #
