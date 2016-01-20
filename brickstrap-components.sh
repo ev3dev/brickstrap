@@ -78,14 +78,14 @@ function brp_validate_project_name()
         fail "No project specified (project name must not be empty)"
     elif [ -r "$BR_PROJECT" -a -d "$BR_PROJECT" ]; then
         brp_validate_project_path "$(readlink -f "$BR_PROJECT")"
-    elif [ -r "$(br_script_path)/$BR_PROJECT" ] && \
-        [ -d "$(br_script_path)/$BR_PROJECT" ]; then
+    elif [ -r "$(br_script_path)/projects/$BR_PROJECT" ] && \
+        [ -d "$(br_script_path)/projects/$BR_PROJECT" ]; then
         brp_validate_project_path \
-            "$(readlink -f "$(br_script_path)/$BR_PROJECT")"
+            "$(readlink -f "$(br_script_path)/projects/$BR_PROJECT")"
     else
         fail "Invalid project name (no such directory): '$BR_PROJECT'.
 Directory does not exist: '$BR_PROJECT'
-Directory does not exist: '$(br_script_path)/$BR_PROJECT'"
+Directory does not exist: '$(br_script_path)/projects/$BR_PROJECT'"
     fi
 }
 

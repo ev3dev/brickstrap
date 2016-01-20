@@ -1,5 +1,3 @@
 brickstrap.sh usr/share/brickstrap/
 user-unshare usr/share/brickstrap/
-ev3-ev3dev-jessie usr/share/brickstrap/
-rpi-ev3dev-jessie usr/share/brickstrap/
-rpi2-ev3dev-jessie usr/share/brickstrap/
+projects usr/share/brickstrap/
