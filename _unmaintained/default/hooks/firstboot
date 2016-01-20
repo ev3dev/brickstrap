@@ -1,4 +1,4 @@
-cat > $ROOTDIR/etc/init.d/firstboot << __END__
+cat > $(br_rootfs_dir)/etc/init.d/firstboot << __END__
 #!/bin/sh -e
 ### BEGIN INIT INFO
 # Provides: firstboot
@@ -21,5 +21,5 @@ for f in rsa dsa ecdsa ed25519; do
 done
 __END__
 
-chmod +x $ROOTDIR/etc/init.d/firstboot
+chmod +x $(br_rootfs_dir)/etc/init.d/firstboot
 br_chroot update-rc.d firstboot start 99 S

@@ -1,3 +1,3 @@
 # systemd-journald uses massive amounts of memory, so we use persistent storage to prevent this
-sed -i 's/^#Storage=auto$/Storage=persistent/' $ROOTDIR/etc/systemd/journald.conf
-mkdir -p $ROOTDIR/var/log/journal
+sed -i 's/^#Storage=auto$/Storage=persistent/' $(br_rootfs_dir)/etc/systemd/journald.conf
+mkdir -p $(br_rootfs_dir)/var/log/journal

@@ -1,7 +1,7 @@
 # Create a release notes template file.
 
-cat > ${IMAGE##$(pwd)/}-release-notes.md << EOF
-Release notes for ${IMAGE##$(pwd)/}
+cat > ${BR_IMAGE_BASE_NAME##$(pwd)/}-release-notes.md << EOF
+Release notes for ${BR_IMAGE_BASE_NAME##$(pwd)/}
 ==============================================
 
 Changes from previous version

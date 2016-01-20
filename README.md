@@ -223,10 +223,10 @@ was required in the actual image file.
 The files in this directory must include the full path as if they were in the
 root directory.
 
-This directory is copied to `/tar-only` in the `$ROOTDIR`. Hooks can also create
+This directory is copied to `/tar-only` in the `$(br_rootfs_dir)`. Hooks can also create
 additional files there. During the `create-tar` stage, brickstap will append
-the files in `$ROOTDIR/tar-only` to the tarball. This means that files in this
-directory will overwrite any files in `$ROOTDIR` with the same name.
+the files in `$(br_rootfs_dir)/tar-only` to the tarball. This means that files in this
+directory will overwrite any files in `$(br_rootfs_dir)` with the same name.
 
 ### The `custom-report.sh` file
 
