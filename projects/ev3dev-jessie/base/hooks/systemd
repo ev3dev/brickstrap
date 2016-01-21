@@ -1,0 +1,11 @@
+# prevent openrobertalab from running
+br_chroot_bind systemctl mask openrobertalab.service
+
+# disable nfs from running by default since most won't use it
+br_chroot_bind systemctl disable nfs-common.service
+br_chroot_bind systemctl disable rpcbind.service
+
+# disable smbd from running by default. Want to leave nmbd on though.
+br_chroot_bind systemctl disable smbd.service
+# we really don't want this running - it causes a long timeout on boot
+br_chroot_bind systemctl mask samba-ad-dc.service

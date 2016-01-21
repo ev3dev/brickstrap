@@ -1,6 +1,0 @@
-# Copy device tree for Model B+ - only Model B is installed by flash-kernel
-# and this image needs to support both models.
-cp $(br_rootfs_dir)/usr/lib/linux-image-*/bcm2708-rpi-b-plus.dtb $(br_rootfs_dir)/boot/flash/
-
-# Also want the overlays to the boot partition
-cp $(br_rootfs_dir)/usr/lib/linux-image-*/overlays/* $(br_rootfs_dir)/boot/flash/overlays/

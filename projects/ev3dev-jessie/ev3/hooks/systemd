@@ -1,0 +1,10 @@
+# make sure serial-getty@.service does not try to use the serial ports because
+# we use them for other things
+br_chroot_bind systemctl mask serial-getty@ttyS0.service
+br_chroot_bind systemctl mask serial-getty@ttyS1.service
+br_chroot_bind systemctl mask serial-getty@ttyS2.service
+br_chroot_bind systemctl mask serial-getty@ttySU0.service
+br_chroot_bind systemctl mask serial-getty@ttySU1.service
+
+# enable zram swap file
+br_chroot_bind systemctl enable zram_swap.service
