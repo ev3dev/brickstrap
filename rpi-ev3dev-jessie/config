@@ -1,3 +1,0 @@
-SUITE="jessie"
-ARCH="armhf"
-IMAGE_FILE_SIZE=${IMAGE_FILE_SIZE:-"1800M"}

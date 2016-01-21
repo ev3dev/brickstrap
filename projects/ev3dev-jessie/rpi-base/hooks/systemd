@@ -1,0 +1,3 @@
+# make sure serial-getty@.service does not try to use the serial port
+# so that it can be used by BrickPi
+br_chroot_bind systemctl mask serial-getty@ttyAMA0.service

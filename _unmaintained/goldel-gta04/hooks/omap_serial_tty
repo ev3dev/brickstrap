@@ -1,1 +1,1 @@
-echo "T0:23:respawn:/sbin/getty -L ttyO2 115200 vt100" >> $ROOTDIR/etc/inittab
+echo "T0:23:respawn:/sbin/getty -L ttyO2 115200 vt100" >> $(br_rootfs_dir)/etc/inittab

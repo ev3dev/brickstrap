@@ -1,7 +1,7 @@
-curl --silent http://www.alwaysinnovating.com/download/modules-omap3-touchbook.tgz | tar -xz -C $ROOTDIR
+curl --silent http://www.alwaysinnovating.com/download/modules-omap3-touchbook.tgz | tar -xz -C $(br_rootfs_dir)
 
 curl --silent http://www.alwaysinnovating.com/download/rt3070_2.1.2.0-r78.5_omap3-touchbook.ipk > /tmp/rt3070_2.1.2.0-r78.5_omap3-touchbook.ipk
-dpkg-deb --fsys-tarfile /tmp/rt3070_2.1.2.0-r78.5_omap3-touchbook.ipk | tar -x -C $ROOTDIR
+dpkg-deb --fsys-tarfile /tmp/rt3070_2.1.2.0-r78.5_omap3-touchbook.ipk | tar -x -C $(br_rootfs_dir)
 rm /tmp/rt3070_2.1.2.0-r78.5_omap3-touchbook.ipk
 
-depmod -a -b $ROOTDIR 2.6.32
+depmod -a -b $(br_rootfs_dir) 2.6.32

@@ -1,4 +1,4 @@
-cat > $ROOTDIR/etc/init.d/firstboot << __END__
+cat > $(br_rootfs_dir)/etc/init.d/firstboot << __END__
 #!/bin/sh -e
 ### BEGIN INIT INFO
 # Provides: firstboot
@@ -45,5 +45,5 @@ echo "/dev/mapper/ev3devVG-swap none            swap   sw                       
 
 __END__
 
-chmod +x $ROOTDIR/etc/init.d/firstboot
+chmod +x $(br_rootfs_dir)/etc/init.d/firstboot
 br_chroot update-rc.d firstboot start 99 S

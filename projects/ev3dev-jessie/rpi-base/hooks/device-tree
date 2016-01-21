@@ -1,0 +1,2 @@
+# Copy all of the overlays to the FAT partition
+cp $(br_rootfs_dir)/usr/lib/linux-image-*/overlays/*.dtb $(br_rootfs_dir)/boot/flash/overlays/

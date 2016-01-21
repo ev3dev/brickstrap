@@ -31,8 +31,8 @@ function brp_unshare()
 function br_chroot()
 {
     [ $# -ge 1 -a -n "$1" ] && "$(br_script_path)/user-unshare" \
-        --mount-host-rootfs="${ROOTDIR}/host-rootfs" \
-        -- chroot "${ROOTDIR}" "$@"
+        --mount-host-rootfs="$(br_rootfs_dir)/$(br_chroot_hostfs_dir)" \
+        -- chroot "$(br_rootfs_dir)" "$@"
 }
 
 #
@@ -41,10 +41,11 @@ function br_chroot()
 function br_chroot_bind()
 {
     [ $# -ge 1 -a -n "$1" ] && "$(br_script_path)/user-unshare" \
-        --mount-proc="${ROOTDIR}/proc" \
-        --mount-sys="${ROOTDIR}/sys" --mount-dev="${ROOTDIR}/dev" \
-        --mount-host-rootfs="${ROOTDIR}/host-rootfs" \
-        -- chroot "${ROOTDIR}" "$@"
+        --mount-proc="$(br_rootfs_dir)/proc" \
+        --mount-sys="$(br_rootfs_dir)/sys" \
+        --mount-dev="$(br_rootfs_dir)/dev" \
+        --mount-host-rootfs="$(br_rootfs_dir)/$(br_chroot_hostfs_dir)" \
+        -- chroot "$(br_rootfs_dir)" "$@"
 }
 
 #
@@ -83,15 +84,16 @@ function brp_check_binfmt_is_qemu()
 #
 function brp_find_binfmt()
 {
-    if [ -x /usr/sbin/update-binfmts -a -e "${ROOTDIR}/usr/bin/dpkg" ]; then
-        echo -n "$(/usr/sbin/update-binfmts --find "${ROOTDIR}/usr/bin/dpkg")"
+    if [ -x /usr/sbin/update-binfmts -a -e "$(br_rootfs_dir)/usr/bin/dpkg" ];
+    then
+        /usr/sbin/update-binfmts --find "$(br_rootfs_dir)/usr/bin/dpkg"
     else
         return 1
     fi
 }
 
 #
-# Attempt to translate a possibly ambiguous 'ARCH' or 'BR_ARCH' value
+# Attempt to translate a possibly ambiguous 'architecture' value
 # to a known QEMU interpreter (architecture). This is a compatibility
 # measure to paper over the differences between 'Debian' and 'QEMU'
 # notions of binary 'architecture'.
@@ -185,8 +187,8 @@ Reverting to guessing QEMU; install binfmt-support packages to avoid it."
         elif [ ! -x /usr/sbin/update-binfmts ]; then
             fail "/usr/sbin/update-binfmts is not executable.
 Do you have necessary binfmt packages installed?"
-        elif [ ! -e "${ROOTDIR}/usr/bin/dpkg" ]; then
-            fail "Unable to locate 'dpkg' in rootfs ($ROOTDIR)."
+        elif [ ! -e "$(br_rootfs_dir)/usr/bin/dpkg" ]; then
+            fail "Unable to locate 'dpkg' in rootfs ($(br_rootfs_dir))."
         else
             fail "/usr/sbin/update-binfmts failed to do its job. Bailing."
         fi
@@ -283,10 +285,10 @@ function brp_setup_qemu_in_rootfs()
 {
     brp_determine_qemu
     if [ -n "$BRP_BINFMT" ]; then
-        mkdir -p "${ROOTDIR}/$(dirname "$(br_get_rootfs_qemu)")" && \
-        cp "$(br_get_host_qemu)" "${ROOTDIR}/$(br_get_rootfs_qemu)" || \
+        mkdir -p "$(br_rootfs_dir)/$(dirname "$(br_get_rootfs_qemu)")" && \
+        cp "$(br_get_host_qemu)" "$(br_rootfs_dir)/$(br_get_rootfs_qemu)" || \
             fail "Unable to copy QEMU binary: '$BRP_BINFMT'
 From host: $(br_get_host_qemu)
-To rootfs: ${ROOTDIR}/$(br_get_rootfs_qemu)"
+To rootfs: $(br_rootfs_dir)/$(br_get_rootfs_qemu)"
     fi
 }
