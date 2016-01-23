@@ -7,6 +7,7 @@
 #              using libguestfs
 #
 # Copyright (C) 2016 Johan Ouwerkerk <jm.ouwerkerk@gmail.com>
+# Copyright (C) 2016 David Lechner <david@lechnology.com>
 #
 
 #
@@ -21,6 +22,43 @@
 # This file provides driver functions for default image types supported by
 # brickstrap.
 #
+
+
+#
+# Implement a single root file system partition scheme.
+# This function creates a MBR type image (type extension: img).
+# $1: path to the image file to generate.
+#
+function brp_image_drv_single_fs()
+{
+    debug "IMAGE_FILE_SIZE: ${IMAGE_FILE_SIZE}"
+    debug "ROOT_PART_NAME: ${ROOT_PART_NAME}"
+
+    [ $# -eq 1 -a -n "$1" ] && guestfish -N \
+        "$1"=fs:ext4:${IMAGE_FILE_SIZE} \
+        set-label /dev/sda1 ${ROOT_PART_NAME} : \
+        mount /dev/sda1 / : \
+        tar-in "$(br_tarball_path)" / : \
+
+}
+
+#
+# Sanity checks configuration variables for brp_image_drv_single_fs
+#
+# Variables:
+# ROOT_PART_NAME: Label of root partition. Default: ROOTFS
+# IMAGE_FILE_SIZE: The size of the entire image file. Default: 3800M
+#
+function brp_image_drv_check_single_fs()
+{
+    ROOT_PART_NAME=${ROOT_PART_NAME:-ROOTFS}
+    IMAGE_FILE_SIZE=${IMAGE_FILE_SIZE:-3800M}
+
+    [ ${#ROOT_PART_NAME} -gt 16 ] && \
+        fail "ROOT_PART_NAME cannot be more than 16 characters."
+    echo $ROOT_PART_NAME | egrep -q '^[a-zA-Z0-9_-]*$' || \
+        fail "ROOT_PART_NAME contains invalid characters"
+}
 
 #
 # Implement a boot+root partition scheme.
@@ -144,6 +182,8 @@ function brp_image_drv_check_redundant_rootfs_w_data()
 #
 function brp_image_drv_register_defaults()
 {
+    br_register_image_type single brp_image_drv_single_fs \
+        img brp_image_drv_check_single_fs
     br_register_image_type bootroot brp_image_drv_bootroot \
         img # no validation required for bootroot, yet
     br_register_image_type redundant brp_image_drv_redundant_rootfs_w_data \

@@ -24,7 +24,7 @@
 #
 function brp_image_default_driver()
 {
-    brp_image_drv_bootroot "$1"
+    brp_image_drv_single_fs "$1"
 }
 
 #
@@ -33,7 +33,7 @@ function brp_image_default_driver()
 #
 function brp_validate_default_image_config()
 {
-    true # there is no validation required for the simple bootroot driver, yet
+    brp_image_drv_check_single_fs
 }
 
 #
