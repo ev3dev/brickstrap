@@ -1,0 +1,2 @@
+# create a file so that we know what image was used for installation
+echo $(br_image_name) > $(br_rootfs_dir)/etc/ev3dev-release
