@@ -302,6 +302,7 @@ function brp_init_env()
         br_for_each_path "$(br_list_paths config -r)" brp_run_hook_impl \
             'loading'
     fi
+    brp_validate_component_names # revalidate component names.
 
     # source custom-image.sh driver scripts
     if br_list_paths custom-image.sh -r >/dev/null; then
@@ -600,6 +601,21 @@ function brp_delete_all() {
     rm -f "$(br_multistrap_conf)"
     rm -f "$(br_tarball_path)"
     rm -rf "$(br_image_dir)"
+    BRP_PWD=$(pwd)
+
+    # if the current working directory is at or underneath the destination
+    # directory, do the safe thing: don't rm -rf, warn about it instead.
+    if [ "${BRP_PWD##$(br_dest_dir)}" != "$BRP_PWD" ]; then
+        warn "Not removing output destination directory: '$(br_dest_dir)'
+To fix this manually, try: rm -rf '$(br_dest_dir)'"
+    # if there are unexpected/stray files left over in destination directory
+    # do the safe thing: don't rm -rf, but log an error message instead.
+    elif [ -n "$(ls -A "$(br_dest_dir)")" ]; then
+        error "Not removing output destination directory: '$(br_dest_dir)'
+Directory is not empty!"
+    else
+        rm -rf "$(br_dest_dir)"
+    fi
     info "Done."
 }
 

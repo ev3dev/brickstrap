@@ -137,21 +137,50 @@ function brp_validate_component_names()
 # arguments passed to this function are passed along to the callback aftet the
 # component name.
 #
+# $1: the list of components to iterate over.
+# $2: list of blacklisted components, used to be able to avoid trying the same
+#     component twice.
+# $3: the callback to invoke.
+# $4...: optional: additional arguments passed to the callback following the
+#                  component name.
+#
+function brp_iterate_components_impl()
+{
+    # note: $2 may be empty, which is valid.
+    if [ $# -lt 3 -o -z "$1" -o -z "$3" ]; then
+        return 1
+    else
+        BR_PATHS_CB_RETURNCODE=0
+        for BRP_PATHS_CUR_FILE in $1; do
+            eval "BRP_PATHS_CUR_FILE=$BRP_PATHS_CUR_FILE" # unwraps quotes
+            echo -n "$2" | fgrep -q "'$BRP_PATHS_CUR_FILE'" || \
+                "$3" "${BRP_PATHS_CUR_FILE##/}" "${@:4:$#}" || \
+                BR_PATHS_CB_RETURNCODE=$?
+        done && return "$BR_PATHS_CB_RETURNCODE"
+    fi
+}
+
+
+#
+# Iterate over the configured component names (commandline arguments), invoking
+# callback for each component name. The calling convention is such that the
+# component name is passed as first argument to the callback, and any extra
+# arguments passed to this function are passed along to the callback aftet the
+# component name.
+#
 # $1: the callback to invoke.
 # $2...: optional: additional arguments passed to the callback following the
 #                  component name.
 #
 function brp_iterate_components()
 {
-    if [ -z "$BR_COMPONENTS" -o $# -eq 0 -o -z "$1" ]; then
+    if [ -z "$BR_COMPONENTS" ]; then
         return 1
     else
-        BR_PATHS_CB_RETURNCODE=0
-        for BRP_PATHS_CUR_FILE in $BR_COMPONENTS; do
-            eval "BRP_PATHS_CUR_FILE=$BRP_PATHS_CUR_FILE" # unwraps quotes
-            "$1" "${BRP_PATHS_CUR_FILE##/}" "${@:2:$#}" || \
-                BR_PATHS_CB_RETURNCODE=$?
-        done && return "$BR_PATHS_CB_RETURNCODE"
+        brp_iterate_components_impl "$BR_COMPONENTS" "" "$@"
+    fi
+    if [ -n "$EXTRA_COMPONENTS" ]; then
+        brp_iterate_components_impl "$EXTRA_COMPONENTS" "$BR_COMPONENTS" "$@"
     fi
 }
 
