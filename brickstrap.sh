@@ -504,11 +504,11 @@ function brp_run_hook() {
     # given the components selection
     elif [ "$(basename "$1")" = "$1" ] || \
         [ "hooks/$(basename "$1")" = "$1" ]; then
-        br_for_each_path "$(br_find_paths "hooks/$(basename "$1")" -f)" \
+        br_for_each_path "$(br_list_paths "hooks/$(basename "$1")" -f)" \
             brp_run_hook_impl
     # probably a full path to a single hook script,
     # should be executed on its own
-    elif br_find_paths "hooks/$(basename "$1")" -f | \
+    elif br_list_paths "hooks/$(basename "$1")" -f | \
             fgrep -xq "$(readlink -f "$1")"; then
         brp_run_hook_impl "$(readlink -f "$1")"
     # probably bogus
