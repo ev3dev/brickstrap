@@ -18,6 +18,126 @@
 #
 
 #
+# Extract the component from a file inside a project structure.
+# This works only for files inside the component directory itself.
+# $1: path to translate back to its component name
+#
+function brp_path_to_component()
+{
+    [ $# -eq 1 -a -n "$1" ] && dirname "${1##$(br_project_dir)/}"
+}
+
+#
+# Read an include file which lists components to add, one per line.
+# $1: the file to read.
+#
+function brp_read_include_file()
+{
+    # Add component name to list of extra components.
+    # Avoid duplicate component names being added to BRP_EXTRA_COMPONENTS
+    # This could otherwise happen if components from BR_COMPONENTS are also
+    # listed in parsed include files.
+    #
+    BRP_IMPORTED_COMPONENT="$(brp_path_to_component "$1")"
+    brp_is_component_included "$BRP_IMPORTED_COMPONENT" || \
+    if [ -z "$BRP_EXTRA_COMPONENTS" ]; then
+        BRP_EXTRA_COMPONENTS="'$BRP_IMPORTED_COMPONENT'"
+    else
+        BRP_EXTRA_COMPONENTS="$BRP_EXTRA_COMPONENTS '$BRP_IMPORTED_COMPONENT'"
+    fi
+
+    # Read include file
+    while IFS='' read -r BRP_CUR_LINE || [ -n "$BRP_CUR_LINE" ]; do
+        case "$BRP_CUR_LINE" in
+        \#*|\;*) # permit comments: lines starting with # or ; are ignored.
+        ;;
+        *)
+            # avoid redundant spaces, i.e.  empty lines are ignored.
+            # avoid adding duplicate component names
+            if [ -z "${BRP_CUR_LINE##/}" ] || \
+                brp_is_component_included "$BRP_CUR_LINE" || \
+                br_is_component_inherited "$BRP_CUR_LINE"; then
+                continue
+            else
+                brp_validate_component_name "$BRP_CUR_LINE"
+                if [ -z "$BRP_INCLUDES" ]; then
+                    BRP_INCLUDES="'${BRP_CUR_LINE##/}'"
+                else
+                    BRP_INCLUDES="$BRP_INCLUDES '${BRP_CUR_LINE##/}'"
+                fi
+            fi
+        ;;
+        esac
+    done < "$1"
+}
+
+function br_is_component_selected()
+{
+    [ $# -eq 1 -a -n "${1##/}" ] && \
+        echo -n "$BR_COMPONENTS" | fgrep -q "'${1##/}'"
+}
+
+function br_is_component_inherited()
+{
+    [ $# -eq 1 -a -n "${1##/}" ] && \
+        echo -n "$BRP_INCLUDES" | fgrep -q "'${1##/}'"
+}
+
+function brp_is_component_imported()
+{
+    [ $# -eq 1 -a -n "${1##/}" ] && \
+        echo -n "$BRP_EXTRA_COMPONENTS" | fgrep -q "'${1##/}'"
+}
+
+function brp_is_component_included()
+{
+    br_is_component_imported "$1" || brp_is_component_selected "$1"
+}
+
+function brp_is_new_include_file()
+{
+    if brp_is_component_included "$(brp_path_to_component "$1")"; then
+        return 1
+    elif br_is_component_inherited "$(brp_path_to_component "$1")" && \
+        [ -r "$1" ]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+#
+# Import extra components by reading include file. This function will
+# iteratively import include files (resolving recursive include structures).
+# Importing terminates once there are no 'new' readable include files left to
+# process.
+#
+function brp_import_extra_components()
+{
+    # for the first round of imports all files are 'new' by definition.
+    BRP_IMPORT_CHECK=-r
+    BRP_INCLUDES=""
+    while br_list_paths include $BRP_IMPORT_CHECK >/dev/null; do
+        br_for_each_path "$(br_list_paths include $BRP_IMPORT_CHECK)" \
+            brp_read_include_file || fail "Failed to process 'include' files"
+        BRP_IMPORT_CHECK=brp_is_new_include_file
+    done
+    BRP_EXTRA_COMPONENTS="$BRP_INCLUDES"
+    debug "Selected components: $BR_COMPONENTS"
+    debug "Inherited components: $BRP_INCLUDES"
+}
+
+
+#
+# Look up path to the root directory of example/default projects shipped with
+# brickstrap.
+#
+function brp_default_projects_tree()
+{
+    echo -n "$(br_script_path)/projects"
+}
+
+#
 # Checks that a project path doesn't map to a 'reserved' brickstrap directory.
 # Reserved brickstrap directories are directories underneath $(br_script_path)
 # which are part of brickstrap source, tests or documentation as opposed to the
@@ -33,15 +153,17 @@ function brp_validate_project_path()
     # Start with simple check allow $1 if it doesn't start with br_script_path
     [ $# -eq 1 -a -n "$1" ] && if [ "${1##$(br_script_path)}" = "$1" ]; then
         BR_PROJECT_DIR="$1"
-    # Allow $1 if it isn't blacklisted.
-    elif [ "$(br_script_path)" != "$1" ] && \
-        [ "${1##$(br_script_path)/tests}" = "$1" ] && \
-        [ "${1##$(br_script_path)/docs}" = "$1" ]; then
-        BR_PROJECT_DIR="$1"
-    else
+    # Test if $1 maps to a blacklisted directory.
+    # If control flow gets to the 'elif', it means $1 must reside somewhere
+    # in the $(br_script_path) hierarchy. If the string comparison succeeds,
+    # it means the project path also lives outside the
+    # $(brp_default_projects_tree) hierarchy which means it is invalid.
+    elif [ "${1##$(brp_default_projects_tree)}" = "$1" ]; then
         fail "Invalid project name: '$BR_PROJECT'.
 Directory does not exist: '$BR_PROJECT'
 Directory is reserved/disallowed: '$1'"
+    else
+        BR_PROJECT_DIR="$1"
     fi
 }
 
@@ -56,9 +178,8 @@ Directory is reserved/disallowed: '$1'"
 #
 function brp_validate_component_path()
 {
-    # Use a similar trick to brp_validate_project_path, but opposite:
     # If the string comparison succeeds, it means the component path lives
-    # outside the project directory, which is invalid.
+    # outside the project directory which is invalid.
     [ $# -eq 2 ] && if [ "${1##$(br_project_dir)}" = "$1" ]; then
         fail "Invalid component name: '$2'
 Directory outside the project: '$1'
@@ -78,14 +199,14 @@ function brp_validate_project_name()
         fail "No project specified (project name must not be empty)"
     elif [ -r "$BR_PROJECT" -a -d "$BR_PROJECT" ]; then
         brp_validate_project_path "$(readlink -f "$BR_PROJECT")"
-    elif [ -r "$(br_script_path)/projects/$BR_PROJECT" ] && \
-        [ -d "$(br_script_path)/projects/$BR_PROJECT" ]; then
+    elif [ -r "$(brp_default_projects_tree)/$BR_PROJECT" ] && \
+        [ -d "$(brp_default_projects_tree)/$BR_PROJECT" ]; then
         brp_validate_project_path \
-            "$(readlink -f "$(br_script_path)/projects/$BR_PROJECT")"
+            "$(readlink -f "$(brp_default_projects_tree)/$BR_PROJECT")"
     else
         fail "Invalid project name (no such directory): '$BR_PROJECT'.
 Directory does not exist: '$BR_PROJECT'
-Directory does not exist: '$(br_script_path)/projects/$BR_PROJECT'"
+Directory does not exist: '$(brp_default_projects_tree)/$BR_PROJECT'"
     fi
 }
 
@@ -134,7 +255,34 @@ function brp_validate_component_names()
 # Iterate over the configured component names (commandline arguments), invoking
 # callback for each component name. The calling convention is such that the
 # component name is passed as first argument to the callback, and any extra
-# arguments passed to this function are passed along to the callback aftet the
+# arguments passed to this function are passed along to the callback after the
+# component name.
+#
+# $1: the list of components to iterate over.
+# $2: the callback to invoke.
+# $3...: optional: additional arguments passed to the callback following the
+#                  component name.
+#
+function brp_iterate_components_impl()
+{
+    if [ $# -lt 2 -o -z "$1" -o -z "$2" ]; then
+        return 1
+    else
+        BRP_COMP_CB_RETURNCODE=0
+        for BRP_PATHS_CUR_COMP in $1; do
+            eval "BRP_PATHS_CUR_COMP=$BRP_PATHS_CUR_COMP" # unwraps quotes
+            "$2" "${BRP_PATHS_CUR_COMP##/}" "${@:3:$#}" || \
+                BRP_COMP_CB_RETURNCODE=$?
+        done && return $BRP_COMP_CB_RETURNCODE
+    fi
+}
+
+
+#
+# Iterate over the configured component names (commandline arguments), invoking
+# callback for each component name. The calling convention is such that the
+# component name is passed as first argument to the callback, and any extra
+# arguments passed to this function are passed along to the callback after the
 # component name.
 #
 # $1: the callback to invoke.
@@ -143,15 +291,12 @@ function brp_validate_component_names()
 #
 function brp_iterate_components()
 {
-    if [ -z "$BR_COMPONENTS" -o $# -eq 0 -o -z "$1" ]; then
+    if [ -z "$BR_COMPONENTS" ]; then
         return 1
+    elif [ -n "$BRP_EXTRA_COMPONENTS" ]; then
+        brp_iterate_components_impl "$BR_COMPONENTS $BRP_EXTRA_COMPONENTS" "$@"
     else
-        BR_PATHS_CB_RETURNCODE=0
-        for BRP_PATHS_CUR_FILE in $BR_COMPONENTS; do
-            eval "BRP_PATHS_CUR_FILE=$BRP_PATHS_CUR_FILE" # unwraps quotes
-            "$1" "${BRP_PATHS_CUR_FILE##/}" "${@:2:$#}" || \
-                BR_PATHS_CB_RETURNCODE=$?
-        done && return "$BR_PATHS_CB_RETURNCODE"
+        brp_iterate_components_impl "$BR_COMPONENTS" "$@"
     fi
 }
 
