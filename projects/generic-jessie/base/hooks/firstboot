@@ -1,0 +1,1 @@
+br_chroot update-rc.d firstboot start 99 S

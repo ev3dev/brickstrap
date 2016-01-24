@@ -1,0 +1,5 @@
+# Add default user and give them sudo powers
+
+br_chroot adduser --disabled-password --gecos \"\" debian
+echo "debian:changeme" | br_chroot chpasswd
+br_chroot usermod -a -G sudo debian

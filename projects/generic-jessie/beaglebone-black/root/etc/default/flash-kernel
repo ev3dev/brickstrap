@@ -1,0 +1,1 @@
+LINUX_KERNEL_CMDLINE="console=ttyO0,115200n8"
