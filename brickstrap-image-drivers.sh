@@ -32,11 +32,11 @@
 function brp_image_drv_single_fs()
 {
     debug "IMAGE_FILE_SIZE: ${IMAGE_FILE_SIZE}"
-    debug "ROOT_PART_NAME: ${ROOT_PART_NAME}"
+    debug "ROOT_PART_LABEL: ${ROOT_PART_LABEL}"
 
     [ $# -eq 1 -a -n "$1" ] && guestfish -N \
         "$1"=fs:ext4:${IMAGE_FILE_SIZE} \
-        set-label /dev/sda1 ${ROOT_PART_NAME} : \
+        set-label /dev/sda1 ${ROOT_PART_LABEL} : \
         mount /dev/sda1 / : \
         tar-in "$(br_tarball_path)" / : \
 
@@ -46,15 +46,15 @@ function brp_image_drv_single_fs()
 # Sanity checks configuration variables for brp_image_drv_single_fs
 #
 # Variables:
-# ROOT_PART_NAME: Label of root partition. Default: ROOTFS
+# ROOT_PART_LABEL: Label of root partition. Default: ROOTFS
 # IMAGE_FILE_SIZE: The size of the entire image file. Default: 3800M
 #
 function brp_image_drv_check_single_fs()
 {
-    ROOT_PART_NAME=${ROOT_PART_NAME:-ROOTFS}
+    ROOT_PART_LABEL=${ROOT_PART_LABEL:-ROOTFS}
     IMAGE_FILE_SIZE=${IMAGE_FILE_SIZE:-3800M}
 
-    brp_validate_ext_label ROOT_PART_NAME
+    brp_validate_ext_label ROOT_PART_LABEL
 }
 
 #
@@ -88,11 +88,11 @@ function brp_image_drv_bootroot()
 # ------------------------------------------------------------------------------
 # part | label              | mount point | fs   | size
 # ------------------------------------------------------------------------------
-#    1 | ${BOOT_PART_NAME}  | /boot/flash | VFAT | 48MB
-#    2 | ${ROOT_PART_NAME}1 | /           | ext4 | ${ROOT_PART_SIZE}
-#    3 | ${ROOT_PART_NAME}2 | /mnt/root2  | ext4 | ${ROOT_PART_SIZE}
-#    4 | ${DATA_PART_NAME}  | /var        | ext4 | ${IMAGE_FILE_SIZE} -
-#      |                    |             |      | 2 * ${ROOT_PART_SIZE} - 48MB
+#    1 | ${BOOT_PART_LABEL}  | /boot/flash | VFAT | 48MB
+#    2 | ${ROOT_PART_LABEL}1 | /           | ext4 | ${ROOT_PART_SIZE}
+#    3 | ${ROOT_PART_LABEL}2 | /mnt/root2  | ext4 | ${ROOT_PART_SIZE}
+#    4 | ${DATA_PART_LABEL}  | /var        | ext4 | ${IMAGE_FILE_SIZE} -
+#      |                     |             |      | 2 * ${ROOT_PART_SIZE} - 48MB
 # ------------------------------------------------------------------------------
 #
 # $1: path to the image file to generate.
@@ -107,13 +107,13 @@ function brp_image_drv_redundant_rootfs_w_data()
         part-add /dev/sda primary $(brp_to_sector $(( 2 * ${ROOT_PART_SIZE} ))) -1 : \
         part-set-mbr-id /dev/sda 1 0x0b : \
         mkfs fat /dev/sda1 : \
-        set-label /dev/sda1 ${BOOT_PART_NAME} : \
+        set-label /dev/sda1 ${BOOT_PART_LABEL} : \
         mkfs ext4 /dev/sda2 : \
-        set-label /dev/sda2 ${ROOT_PART_NAME}1 : \
+        set-label /dev/sda2 ${ROOT_PART_LABEL}1 : \
         mkfs ext4 /dev/sda3 : \
-        set-label /dev/sda3 ${ROOT_PART_NAME}2 : \
+        set-label /dev/sda3 ${ROOT_PART_LABEL}2 : \
         mkfs ext4 /dev/sda4 : \
-        set-label /dev/sda4 ${DATA_PART_NAME} : \
+        set-label /dev/sda4 ${DATA_PART_LABEL} : \
         mkdir-p /boot/flash : \
         mount /dev/sda1 /boot/flash : \
         mount /dev/sda2 / : \
@@ -133,27 +133,27 @@ function brp_image_drv_redundant_rootfs_w_data()
 # type. If variables aren't defined a default is set.
 #
 # Variables:
-# BOOT_PART_NAME: Label of boot partition. Default: BOOT
-# ROOT_PART_NAME: Label of root partition. Default: ROOTFS
-# DATA_PART_NAME: Label of root partition. Default: DATA
+# BOOT_PART_LABEL: Label of boot partition. Default: BOOT
+# ROOT_PART_LABEL: Label of root partition. Default: ROOTFS
+# DATA_PART_LABEL: Label of root partition. Default: DATA
 # IMAGE_FILE_SIZE: The size of the entire image file. Default: 3800M
 #
 function brp_image_drv_check_redundant_rootfs_w_data()
 {
 
-    BOOT_PART_NAME=${BOOT_PART_NAME:-BOOT}
-    ROOT_PART_NAME=${ROOT_PART_NAME:-ROOTFS}
-    DATA_PART_NAME=${DATA_PART_NAME:-DATA}
+    BOOT_PART_LABEL=${BOOT_PART_LABEL:-BOOT}
+    ROOT_PART_LABEL=${ROOT_PART_LABEL:-ROOTFS}
+    DATA_PART_LABEL=${DATA_PART_LABEL:-DATA}
     IMAGE_FILE_SIZE=${IMAGE_FILE_SIZE:-3800M}
 
-    brp_validate_fat_label BOOT_PART_NAME
+    brp_validate_fat_label BOOT_PART_LABEL
 
-    # appending 1/2 to ROOT_PART_NAME, so 16 characters total
-    [ ${#ROOT_PART_NAME} -gt 15 ] && \
-        fail "ROOT_PART_NAME cannot be more than 15 characters."
-    brp_validate_ext_label ROOT_PART_NAME
+    # appending 1/2 to ROOT_PART_LABEL, so 16 characters total
+    [ ${#ROOT_PART_LABEL} -gt 15 ] && \
+        fail "ROOT_PART_LABEL cannot be more than 15 characters."
+    brp_validate_ext_label ROOT_PART_LABEL
 
-    brp_validate_ext_label DATA_PART_NAME
+    brp_validate_ext_label DATA_PART_LABEL
 }
 
 #
