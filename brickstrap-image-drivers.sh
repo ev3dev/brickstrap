@@ -60,27 +60,88 @@ function brp_image_drv_check_single_fs()
 #
 # Implement a boot+root partition scheme.
 # This function creates a 'boot+root' MBR type image (type extension: img).
+# ------------------------------------------------------------------------------
+# part | label               | mount point | fs   | size
+# ------------------------------------------------------------------------------
+#    1 | ${BOOT_PART_LABEL}  | /boot/flash | VFAT | 48MB
+#    2 | ${ROOT_PART_LABEL}  | /           | ext4 | ${IMAGE_FILE_SIZE} - 52MB
+# ------------------------------------------------------------------------------
+#
+# Partitions start on 4MB boundaries which hopefully increases performance for
+# most SD cards. More at <https://wiki.gentoo.org/wiki/SDCard>.
+#
+# Variables:
+# IMAGE_FILE_SIZE: Total size of image
+# BOOT_PART_LABEL: Label for boot partition.
+# ROOT_PART_LABEL: Label for root partition.
+# BB_MLO_FILE: Optional first stage boot loader for BeagleBone
+# BB_UBOOT_IMG_FILE: Optional second stage boot loader for BeagleBone
+#
 # $1: path to the image file to generate.
 #
 function brp_image_drv_bootroot()
 {
     debug "IMAGE_FILE_SIZE: ${IMAGE_FILE_SIZE}"
-    [ $# -eq 1 -a -n "$1" ] && guestfish -N \
-        "$1"=bootroot:vfat:ext4:${IMAGE_FILE_SIZE}:48M:mbr \
-        part-set-mbr-id /dev/sda 1 0x0b : \
-        set-label /dev/sda2 EV3_FILESYS : \
-        mount /dev/sda2 / : \
-        tar-in "$(br_tarball_path)" / : \
-        mkdir-p /media/mmc_p1 : \
-        mount /dev/sda1 /media/mmc_p1 : \
-        glob mv /boot/flash/* /media/mmc_p1/ : \
+    debug "BOOT_PART_LABEL: ${BOOT_PART_LABEL}"
+    debug "ROOT_PART_LABEL: ${ROOT_PART_LABEL}"
 
-    # Hack to set the volume label on the vfat partition since guestfish does
-    # not know how to do that. Must be null padded to exactly 11 bytes.
-    echo -e -n "EV3_BOOT\0\0\0" | \
-        dd of="$1" bs=1 seek=32811 count=11 conv=notrunc >/dev/null 2>&1
+    BRP_FAT_START=$(brp_to_sector 4)
+    BRP_EXT_START=$(brp_to_sector 52)
+
+    guestfish -N "$1"=disk:${IMAGE_FILE_SIZE} -- \
+        part-init /dev/sda mbr : \
+        part-add /dev/sda primary $BRP_FAT_START $(( $BRP_EXT_START - 1 )) : \
+        part-add /dev/sda primary $BRP_EXT_START -1 : \
+        part-set-mbr-id /dev/sda 1 0x0b : \
+        mkfs fat /dev/sda1 : \
+        set-label /dev/sda1 ${BOOT_PART_LABEL} : \
+        mkfs ext4 /dev/sda2 : \
+        set-label /dev/sda2 ${ROOT_PART_LABEL} : \
+        mount /dev/sda2 / : \
+        mkdir-p /boot/flash : \
+        mount /dev/sda1 /boot/flash : \
+        tar-in "$(br_tarball_path)" / : \
+
+    # Handle special case of BeagleBone boot loader
+    # See http://elinux.org/Beagleboard:U-boot_partitioning_layout_2.0
+    if [ -z $BB_MLO_FILE ] && [ -f $(br_rootfs_dir)$(br_beaglebone_boot_dir)/MLO ]; then
+        BB_MLO_FILE=$(br_rootfs_dir)$(br_beaglebone_boot_dir)/MLO
+    fi
+    if [ -f $BB_MLO_FILE ]; then
+        dd if=${BB_MLO_FILE} of="$1" count=1 seek=1 bs=128k conv=notrunc
+    fi
+    if [ -z $BB_UBOOT_IMG_FILE ] && [ -f $(br_rootfs_dir)$(br_beaglebone_boot_dir)/u-boot.img ]; then
+        BB_UBOOT_IMG_FILE=$(br_rootfs_dir)$(br_beaglebone_boot_dir)/u-boot.img
+    fi
+    if [ -f $BB_UBOOT_IMG_FILE ]; then
+        dd if=${BB_UBOOT_IMG_FILE} of="$1" count=2 seek=1 bs=384k conv=notrunc
+    fi
 }
 
+#
+# Sanity checks configuration variables for brp_image_drv_bootroot
+#
+# Variables:
+# BOOT_PART_LABEL: Label of root partition. Default: BOOT
+# ROOT_PART_LABEL: Label of root partition. Default: ROOTFS
+# IMAGE_FILE_SIZE: The size of the entire image file. Default: 3800M
+#
+function brp_image_drv_check_bootroot()
+{
+    BOOT_PART_LABEL=${BOOT_PART_LABEL:-BOOT}
+    ROOT_PART_LABEL=${ROOT_PART_LABEL:-ROOTFS}
+    IMAGE_FILE_SIZE=${IMAGE_FILE_SIZE:-3800M}
+
+    brp_validate_ext_label BOOT_PART_LABEL
+    brp_validate_ext_label ROOT_PART_LABEL
+
+    if [ -n "$BB_MLO_FILE" ] &&  [ ! -f "$BB_MLO_FILE" ]; then
+        fail "BeagleBone MLO file '$BB_MLO_FILE' does not exist."
+    fi
+    if [ -n "$BB_UBOOT_IMG_FILE" ] && [ ! -f "$BB_UBOOT_IMG_FILE" ]; then
+        fail "BeagleBone u-boot.img file '$BB_UBOOT_IMG_FILE' does not exist."
+    fi
+}
 
 #
 # Create a disk image with MBR partition table and 4 partitions. There are two
@@ -165,13 +226,21 @@ function brp_image_drv_register_defaults()
     br_register_image_type single brp_image_drv_single_fs \
         img brp_image_drv_check_single_fs
     br_register_image_type bootroot brp_image_drv_bootroot \
-        img # no validation required for bootroot, yet
+        img brp_image_drv_check_bootroot
     br_register_image_type redundant brp_image_drv_redundant_rootfs_w_data \
         img brp_image_drv_check_redundant_rootfs_w_data
 }
 
 ### Utility Functions
 #####################################################################
+
+#
+# Get default directory used for BeagleBone boot loader files.
+#
+function br_beaglebone_boot_dir()
+{
+    echo /brickstrap/beaglebone-boot
+}
 
 #
 # Check that a variable is a valid FAT partition label.
@@ -217,4 +286,3 @@ function brp_to_sector()
     #echo $(( $1 * 1024 * 1024 / 512 ))
     echo $(( $1 * 2048 ))
 }
-
