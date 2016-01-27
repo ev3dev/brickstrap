@@ -136,11 +136,11 @@ function brp_set_multi_value_opt()
 function brp_set_destination_defaults()
 {
     if [ -z "$BR_DESTDIR" ]; then
-        BR_DESTDIR=$(pwd)
+        BRP_DEFAULT_DESTDIR=$(pwd)
     fi
 
     if [ -z "$BR_IMAGE_BASE_NAME" ]; then
-        BRP_IMAGE_DEFAULT_NAME="$(basename "$BR_DESTDIR")-$(date +%F)"
+        BRP_IMAGE_DEFAULT_NAME="$(basename "$(br_dest_dir)")-$(date +%F)"
     fi
 }
 
@@ -161,7 +161,11 @@ function brp_validate_image_name()
 #
 function br_dest_dir()
 {
-    [ -n "$BR_DESTDIR" ] && echo -n "$(readlink -f "$BR_DESTDIR")"
+    if [ -n "$BR_DESTDIR" ]; then
+        echo -n "$(readlink -f "$BR_DESTDIR")"
+    else
+        echo -n "$(readlink -f "$BRP_DEFAULT_DESTDIR")"
+    fi
 }
 
 #
@@ -169,7 +173,7 @@ function br_dest_dir()
 #
 function br_rootfs_dir()
 {
-    [ -n "$BR_DESTDIR" ] && echo -n "$(br_dest_dir)/rootfs"
+    echo -n "$(br_dest_dir)/rootfs"
 }
 
 #
@@ -177,7 +181,7 @@ function br_rootfs_dir()
 #
 function br_image_dir()
 {
-    [ -n "$BR_DESTDIR" ] && echo -n "$(br_dest_dir)/images"
+    echo -n "$(br_dest_dir)/images"
 }
 
 #
@@ -185,7 +189,7 @@ function br_image_dir()
 #
 function br_tarball_path()
 {
-    [ -n "$BR_DESTDIR" ] && echo -n "$(br_dest_dir)/rootfs.tar"
+    echo -n "$(br_dest_dir)/rootfs.tar"
 }
 
 #
@@ -196,7 +200,7 @@ function br_tarball_path()
 #
 function brp_image_path()
 {
-    [ $# -eq 2 -a -n "$1" -a -n "$2" ] && [ -n "$BR_DESTDIR" ] && \
+    [ $# -eq 2 -a -n "$1" -a -n "$2" ] && \
         echo -n "$(br_image_dir)/$(brp_image_name "$1" "$2")"
 }
 
@@ -229,7 +233,7 @@ function brp_image_name()
 #
 function br_brp_dir()
 {
-    [ -n "$BR_DESTDIR" ] && echo -n "$(br_rootfs_dir)/$(br_chroot_brp_dir)"
+    echo -n "$(br_rootfs_dir)/$(br_chroot_brp_dir)"
 }
 
 #
@@ -257,7 +261,7 @@ function br_chroot_hostfs_dir()
 #
 function br_multistrap_conf()
 {
-    [ -n "$BR_DESTDIR" ] && echo -n "$(br_dest_dir)/multistrap.conf"
+    echo -n "$(br_dest_dir)/multistrap.conf"
 }
 
 #
