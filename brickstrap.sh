@@ -328,8 +328,9 @@ function brp_read_package_file()
         *)
             # avoid redundant spaces, i.e.  empty lines are ignored.
             # also check that the package line hasn't been blacklisted
-            if [ -z "$BRP_CUR_LINE" ] || \
-                echo "$BLACKLIST_PACKAGES" | fgrep -q "$BRP_CUR_LINE" || \
+            if [ -z "$BRP_CUR_LINE" ]; then
+                continue
+            elif echo "$BLACKLIST_PACKAGES" | fgrep -q "$BRP_CUR_LINE" || \
                 echo "$BR_PACKAGE_BLACKLIST" | fgrep -q "'$BRP_CUR_LINE'"; then
                 info "Ignoring blacklisted package: '$BRP_CUR_LINE'"
                 continue
