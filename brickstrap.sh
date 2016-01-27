@@ -432,12 +432,41 @@ function brp_preseed_debconf() {
 function brp_configure_packages () {
     info "Configuring packages..."
     brp_check_rootfs_dir
+    BRP_OLD_PATH="$PATH"
+    BRP_W_AWK_PATH="$PATH"
 
     # awk needs to be in the path, but Debian symlinks are not
-    # configured yet, so make a temporary one in /usr/local/bin.
-    info "Creating awk temporary symlink"
-    br_chroot mkdir -p /usr/local/bin
-    br_chroot ln -sf /usr/bin/gawk /usr/local/bin/awk
+    # configured yet, so make a temporary one in /$(br_chroot_brp_dir)/bin
+    # then export the dir on the PATH.
+    #
+    if br_chroot which awk >/dev/null; then
+        info "Using existing 'awk': $(br_chroot which awk)"
+    elif [ -x "/$(br_chroot_brp_dir)/bin/awk" ]; then
+        info "Reusing old temporary symlink: /$(br_chroot_brp_dir)/bin/awk"
+        BRP_W_AWK_PATH="$BRP_W_AWK_PATH:/$(br_chroot_brp_dir)/bin"
+    else
+        info "Creating awk temporary symlink: /$(br_chroot_brp_dir)/bin/awk"
+        br_chroot mkdir -p "/$(br_chroot_brp_dir)/bin"
+        BRP_W_AWK_PATH="$BRP_W_AWK_PATH:/$(br_chroot_brp_dir)/bin"
+        #
+        # Do not hard-depend on gawk, because it is an optional package.
+        # Someone might try to bootstrap Debian without it.
+        # (By contrast: mawk has priority 'required').
+        #
+        if [ -e "$(br_rootfs_dir)/usr/bin/gawk" ]; then
+            info "Using 'gawk' to provide /$(br_chroot_brp_dir)/bin/awk"
+            br_chroot ln -sf /usr/bin/gawk "/$(br_chroot_brp_dir)/bin/awk"
+        elif [ -e "$(br_rootfs_dir)/usr/bin/mawk" ]; then
+            info "Using 'mawk' to provide /$(br_chroot_brp_dir)/bin/awk"
+            br_chroot ln -sf /usr/bin/mawk "/$(br_chroot_brp_dir)/bin/awk"
+        else
+            fail "No 'awk' available in: $(br_rootfs_dir)
+Tried: /usr/bin/gawk
+Tried: /usr/bin/mawk"
+        fi
+    fi
+
+    export PATH="$BRP_W_AWK_PATH"
 
     # preseed debconf
     if br_list_paths debconfseed.txt -r >/dev/null; then
@@ -467,9 +496,13 @@ function brp_configure_packages () {
     br_chroot_bind /usr/bin/dpkg --configure -a || \
     br_chroot_bind /usr/bin/dpkg --configure -a || true
 
+    export PATH="$BRP_OLD_PATH"
+
     # remove our temporary awk symlink as it is no longer required.
-    info "Removing awk temporary symlink"
-    br_chroot rm -f /usr/local/bin/awk
+    if [ -x "/$(br_chroot_brp_dir)/bin/awk" ]; then
+        info "Removing awk temporary symlink"
+        br_chroot rm -f "/$(br_chroot_brp_dir)/bin/awk"
+    fi
 }
 
 function brp_report_hooks_exit_code()
