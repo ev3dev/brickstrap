@@ -7,6 +7,7 @@
 #              using libguestfs
 #
 # Copyright (C) 2016 Johan Ouwerkerk <jm.ouwerkerk@gmail.com>
+# Copyright (C) 2016 David Lechner <david@lechnology.com>
 #
 
 #
@@ -21,6 +22,40 @@
 # This file provides driver functions for default image types supported by
 # brickstrap.
 #
+
+
+#
+# Implement a single root file system partition scheme.
+# This function creates a MBR type image (type extension: img).
+# $1: path to the image file to generate.
+#
+function brp_image_drv_single_fs()
+{
+    debug "IMAGE_FILE_SIZE: ${IMAGE_FILE_SIZE}"
+    debug "ROOT_PART_LABEL: ${ROOT_PART_LABEL}"
+
+    [ $# -eq 1 -a -n "$1" ] && guestfish -N \
+        "$1"=fs:ext4:${IMAGE_FILE_SIZE} \
+        set-label /dev/sda1 ${ROOT_PART_LABEL} : \
+        mount /dev/sda1 / : \
+        tar-in "$(br_tarball_path)" / : \
+
+}
+
+#
+# Sanity checks configuration variables for brp_image_drv_single_fs
+#
+# Variables:
+# ROOT_PART_LABEL: Label of root partition. Default: ROOTFS
+# IMAGE_FILE_SIZE: The size of the entire image file. Default: 3800M
+#
+function brp_image_drv_check_single_fs()
+{
+    ROOT_PART_LABEL=${ROOT_PART_LABEL:-ROOTFS}
+    IMAGE_FILE_SIZE=${IMAGE_FILE_SIZE:-3800M}
+
+    brp_validate_ext_label ROOT_PART_LABEL
+}
 
 #
 # Implement a boot+root partition scheme.
@@ -46,14 +81,6 @@ function brp_image_drv_bootroot()
         dd of="$1" bs=1 seek=32811 count=11 conv=notrunc >/dev/null 2>&1
 }
 
-#
-# Convert megabytes to sectors. Sectors are assumed to be 512 bytes big.
-# $1 is size in megabytes.
-function brp_to_sector()
-{
-    #echo $(( $1 * 1024 * 1024 / 512 ))
-    echo $(( $1 * 2048 ))
-}
 
 #
 # Create a disk image with MBR partition table and 4 partitions. There are two
@@ -61,11 +88,11 @@ function brp_to_sector()
 # ------------------------------------------------------------------------------
 # part | label              | mount point | fs   | size
 # ------------------------------------------------------------------------------
-#    1 | ${BOOT_PART_NAME}  | /boot/flash | VFAT | 48MB
-#    2 | ${ROOT_PART_NAME}1 | /           | ext4 | ${ROOT_PART_SIZE}
-#    3 | ${ROOT_PART_NAME}2 | /mnt/root2  | ext4 | ${ROOT_PART_SIZE}
-#    4 | ${DATA_PART_NAME}  | /var        | ext4 | ${IMAGE_FILE_SIZE} -
-#      |                    |             |      | 2 * ${ROOT_PART_SIZE} - 48MB
+#    1 | ${BOOT_PART_LABEL}  | /boot/flash | VFAT | 48MB
+#    2 | ${ROOT_PART_LABEL}1 | /           | ext4 | ${ROOT_PART_SIZE}
+#    3 | ${ROOT_PART_LABEL}2 | /mnt/root2  | ext4 | ${ROOT_PART_SIZE}
+#    4 | ${DATA_PART_LABEL}  | /var        | ext4 | ${IMAGE_FILE_SIZE} -
+#      |                     |             |      | 2 * ${ROOT_PART_SIZE} - 48MB
 # ------------------------------------------------------------------------------
 #
 # $1: path to the image file to generate.
@@ -80,13 +107,13 @@ function brp_image_drv_redundant_rootfs_w_data()
         part-add /dev/sda primary $(brp_to_sector $(( 2 * ${ROOT_PART_SIZE} ))) -1 : \
         part-set-mbr-id /dev/sda 1 0x0b : \
         mkfs fat /dev/sda1 : \
-        set-label /dev/sda1 ${BOOT_PART_NAME} : \
+        set-label /dev/sda1 ${BOOT_PART_LABEL} : \
         mkfs ext4 /dev/sda2 : \
-        set-label /dev/sda2 ${ROOT_PART_NAME}1 : \
+        set-label /dev/sda2 ${ROOT_PART_LABEL}1 : \
         mkfs ext4 /dev/sda3 : \
-        set-label /dev/sda3 ${ROOT_PART_NAME}2 : \
+        set-label /dev/sda3 ${ROOT_PART_LABEL}2 : \
         mkfs ext4 /dev/sda4 : \
-        set-label /dev/sda4 ${DATA_PART_NAME} : \
+        set-label /dev/sda4 ${DATA_PART_LABEL} : \
         mkdir-p /boot/flash : \
         mount /dev/sda1 /boot/flash : \
         mount /dev/sda2 / : \
@@ -106,36 +133,27 @@ function brp_image_drv_redundant_rootfs_w_data()
 # type. If variables aren't defined a default is set.
 #
 # Variables:
-# BOOT_PART_NAME: Label of boot partition. Default: BOOT
-# ROOT_PART_NAME: Label of root partition. Default: ROOTFS
-# DATA_PART_NAME: Label of root partition. Default: DATA
+# BOOT_PART_LABEL: Label of boot partition. Default: BOOT
+# ROOT_PART_LABEL: Label of root partition. Default: ROOTFS
+# DATA_PART_LABEL: Label of root partition. Default: DATA
 # IMAGE_FILE_SIZE: The size of the entire image file. Default: 3800M
 #
 function brp_image_drv_check_redundant_rootfs_w_data()
 {
 
-    BOOT_PART_NAME=${BOOT_PART_NAME:-BOOT}
-    ROOT_PART_NAME=${ROOT_PART_NAME:-ROOTFS}
-    DATA_PART_NAME=${DATA_PART_NAME:-DATA}
+    BOOT_PART_LABEL=${BOOT_PART_LABEL:-BOOT}
+    ROOT_PART_LABEL=${ROOT_PART_LABEL:-ROOTFS}
+    DATA_PART_LABEL=${DATA_PART_LABEL:-DATA}
     IMAGE_FILE_SIZE=${IMAGE_FILE_SIZE:-3800M}
 
-    [ ${#BOOT_PART_NAME} -gt 11 ] && \
-        fail "BOOT_PART_NAME cannot be more than 11 characters."
+    brp_validate_fat_label BOOT_PART_LABEL
 
-    # see https://en.wikipedia.org/wiki/Label_%28command%29
-    echo $BOOT_PART_NAME | egrep -q '^[A-Z0-9_-]*$' || \
-        fail "BOOT_PART_NAME contains invalid characters"
+    # appending 1/2 to ROOT_PART_LABEL, so 16 characters total
+    [ ${#ROOT_PART_LABEL} -gt 15 ] && \
+        fail "ROOT_PART_LABEL cannot be more than 15 characters."
+    brp_validate_ext_label ROOT_PART_LABEL
 
-    # appending 1/2 to ROOT_PART_NAME, so 16 characters total
-    [ ${#ROOT_PART_NAME} -gt 15 ] && \
-        fail "ROOT_PART_NAME cannot be more than 15 characters."
-    echo $ROOT_PART_NAME | egrep -q '^[a-zA-Z0-9_-]*$' || \
-        fail "ROOT_PART_NAME contains invalid characters"
-
-    [ ${#DATA_PART_NAME} -gt 16 ] && \
-        fail "DATA_PART_NAME cannot be more than 16 characters."
-    echo $DATA_PART_NAME | egrep -q '^[a-zA-Z0-9_-]*$' || \
-        fail "DATA_PART_NAME contains invalid characters"
+    brp_validate_ext_label DATA_PART_LABEL
 }
 
 #
@@ -144,9 +162,59 @@ function brp_image_drv_check_redundant_rootfs_w_data()
 #
 function brp_image_drv_register_defaults()
 {
+    br_register_image_type single brp_image_drv_single_fs \
+        img brp_image_drv_check_single_fs
     br_register_image_type bootroot brp_image_drv_bootroot \
         img # no validation required for bootroot, yet
     br_register_image_type redundant brp_image_drv_redundant_rootfs_w_data \
         img brp_image_drv_check_redundant_rootfs_w_data
+}
+
+### Utility Functions
+#####################################################################
+
+#
+# Check that a variable is a valid FAT partition label.
+# See https://en.wikipedia.org/wiki/Label_%28command%29
+#
+# Parameters:
+# $1: the name of the variable to check
+#
+brp_validate_fat_label()
+{
+    eval value=\$$1
+
+    [ ${#value} -gt 11 ] && \
+        fail "$1=$value cannot be more than 11 characters."
+
+    echo ${value} | egrep -q '^[A-Z0-9_-]*$' || \
+        fail "$1=$value contains invalid characters"
+}
+
+#
+# Check that a variable is a valid ext partition label.
+#
+# Parameters:
+# $1: the name of the variable to check
+#
+brp_validate_ext_label()
+{
+    eval value=\$$1
+
+    [ ${#value} -gt 16 ] && \
+        fail "$1=$value cannot be more than 16 characters."
+
+    echo ${value} | egrep -q '^[a-zA-Z0-9_-]*$' || \
+        fail "$1=$value contains invalid characters"
+}
+
+#
+# Convert megabytes to sectors. Sectors are assumed to be 512 bytes big.
+# $1 is size in megabytes.
+#
+function brp_to_sector()
+{
+    #echo $(( $1 * 1024 * 1024 / 512 ))
+    echo $(( $1 * 2048 ))
 }
 

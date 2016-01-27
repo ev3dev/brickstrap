@@ -1,0 +1,32 @@
+#!/bin/sh -e
+
+### BEGIN INIT INFO
+# Provides: firstboot
+# Required-Start: $all
+# Required-Stop:
+# Default-Start: S
+# Default-Stop:
+# X-Start-Before: ssh brickman
+# Short-Description: ev3dev first boot tasks
+### END INIT INFO
+
+case "$1" in
+    start)
+        update-rc.d -f firstboot remove
+
+        # generating ssh host key to be unique
+        for f in rsa dsa ecdsa ed25519; do
+            echo "generating ssh ${f} key..."
+            ssh-keygen -q -t ${f} -f /etc/ssh/ssh_host_${f}_key -C "" -N ""
+        done
+        ;;
+    stop|restart|reload|force-reload|status)
+        :
+        ;;
+    *)
+        echo "Usage: /etc/init.d/firstboot start"
+        exit 1
+        ;;
+esac
+
+exit 0
