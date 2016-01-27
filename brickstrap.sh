@@ -429,6 +429,33 @@ function brp_preseed_debconf() {
     rm "$(br_rootfs_dir)/tmp/debconfseed.txt"
 }
 
+#
+# Ensure that a 'usable' /etc/shells file exists for the add-shell utility.
+# This ensures that configuration of shell packages (dash in particular) do
+# not fail with spurious error messages from misbehaving add-shell.
+# The add-shell utility of debianutils (at least version 4.6) may fail on
+# empty/missing /etc/shells file with a bogus error message.
+#
+function brp_fixup_etc_shells()
+{
+    info "Checking /etc/shells"
+    if [ ! -f "$(br_rootfs_dir)/etc/shells" ] ||
+        [ ! -s "$(br_rootfs_dir)/etc/shells" ]; then
+        if [ -f "$(br_rootfs_dir)/usr/share/debianutils/shells" ] &&
+            [ -s "$(br_rootfs_dir)/usr/share/debianutils/shells" ]; then
+            info "Populating default /etc/shells from template"
+            cp "$(br_rootfs_dir)/usr/share/debianutils/shells" \
+                "$(br_rootfs_dir)/etc/shells"
+        else
+            info "Generating dummy contents for: /etc/shells"
+            echo "# Dummy comment to work around add-shell bug" >\
+                "$(br_rootfs_dir)/etc/shells"
+        fi
+    else
+        info "Default /etc/shells appears to be sane... skipping"
+    fi
+}
+
 function brp_configure_packages () {
     info "Configuring packages..."
     brp_check_rootfs_dir
@@ -491,10 +518,12 @@ Tried: /usr/bin/mawk"
         fi
     done
 
-    # run dpkg `--configure -a` twice because of errors during the first run
+    brp_fixup_etc_shells
+
     info "configuring packages..."
-    br_chroot_bind /usr/bin/dpkg --configure -a || \
-    br_chroot_bind /usr/bin/dpkg --configure -a || true
+    br_chroot_bind /usr/bin/dpkg --configure -a
+
+    export PATH="$BRP_OLD_PATH"
 
     export PATH="$BRP_OLD_PATH"
 
