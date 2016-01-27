@@ -520,10 +520,8 @@ Tried: /usr/bin/mawk"
 
     brp_fixup_etc_shells
 
-    # run dpkg `--configure -a` twice because of errors during the first run
     info "configuring packages..."
-    br_chroot_bind /usr/bin/dpkg --configure -a || \
-    br_chroot_bind /usr/bin/dpkg --configure -a || true
+    br_chroot_bind /usr/bin/dpkg --configure -a
 
     export PATH="$BRP_OLD_PATH"
 
