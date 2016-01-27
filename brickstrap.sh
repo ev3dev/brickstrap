@@ -600,6 +600,16 @@ function brp_delete_all() {
     rm -f "$(br_multistrap_conf)"
     rm -f "$(br_tarball_path)"
     rm -rf "$(br_image_dir)"
+    BRP_PWD=$(pwd)
+
+    # if the current working directory is at or underneath the destination
+    # directory, do the safe thing: don't rm -rf, warn about it instead.
+    if [ "${BRP_PWD##$(br_dest_dir)}" != "$BRP_PWD" ]; then
+        warn "Not removing output destination directory: '$(br_dest_dir)'
+To fix this manually, try: rm -rf '$(br_dest_dir)'"
+    else
+        rm -rf "$(br_dest_dir)"
+    fi
     info "Done."
 }
 
