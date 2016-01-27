@@ -428,15 +428,71 @@ function brp_preseed_debconf() {
     rm "$(br_rootfs_dir)/tmp/debconfseed.txt"
 }
 
+#
+# Ensure that a 'usable' /etc/shells file exists for the add-shell utility.
+# This ensures that configuration of shell packages (dash in particular) do
+# not fail with spurious error messages from misbehaving add-shell.
+# The add-shell utility of debianutils (at least version 4.6) may fail on
+# empty/missing /etc/shells file with a bogus error message.
+#
+function brp_fixup_etc_shells()
+{
+    info "Checking /etc/shells"
+    if [ ! -f "$(br_rootfs_dir)/etc/shells" ] ||
+        [ ! -s "$(br_rootfs_dir)/etc/shells" ]; then
+        if [ -f "$(br_rootfs_dir)/usr/share/debianutils/shells" ] &&
+            [ -s "$(br_rootfs_dir)/usr/share/debianutils/shells" ]; then
+            info "Populating default /etc/shells from template"
+            cp "$(br_rootfs_dir)/usr/share/debianutils/shells" \
+                "$(br_rootfs_dir)/etc/shells"
+        else
+            info "Generating dummy contents for: /etc/shells"
+            echo "# Dummy comment to work around add-shell bug" >\
+                "$(br_rootfs_dir)/etc/shells"
+        fi
+    else
+        info "Default /etc/shells appears to be sane... skipping"
+    fi
+}
+
 function brp_configure_packages () {
     info "Configuring packages..."
     brp_check_rootfs_dir
+    BRP_OLD_PATH="$PATH"
+    BRP_W_AWK_PATH="$PATH"
 
     # awk needs to be in the path, but Debian symlinks are not
-    # configured yet, so make a temporary one in /usr/local/bin.
-    info "Creating awk temporary symlink"
-    br_chroot mkdir -p /usr/local/bin
-    br_chroot ln -sf /usr/bin/gawk /usr/local/bin/awk
+    # configured yet, so make a temporary one in /$(br_chroot_brp_dir)/bin
+    # then export the dir on the PATH.
+    #
+    if br_chroot which awk >/dev/null; then
+        info "Using existing 'awk': $(br_chroot which awk)"
+    elif [ -x "/$(br_chroot_brp_dir)/bin/awk" ]; then
+        info "Reusing old temporary symlink: /$(br_chroot_brp_dir)/bin/awk"
+        BRP_W_AWK_PATH="$BRP_W_AWK_PATH:/$(br_chroot_brp_dir)/bin"
+    else
+        info "Creating awk temporary symlink: /$(br_chroot_brp_dir)/bin/awk"
+        br_chroot mkdir -p "/$(br_chroot_brp_dir)/bin"
+        BRP_W_AWK_PATH="$BRP_W_AWK_PATH:/$(br_chroot_brp_dir)/bin"
+        #
+        # Do not hard-depend on gawk, because it is an optional package.
+        # Someone might try to bootstrap Debian without it.
+        # (By contrast: mawk has priority 'required').
+        #
+        if [ -e "$(br_rootfs_dir)/usr/bin/gawk" ]; then
+            info "Using 'gawk' to provide /$(br_chroot_brp_dir)/bin/awk"
+            br_chroot ln -sf /usr/bin/gawk "/$(br_chroot_brp_dir)/bin/awk"
+        elif [ -e "$(br_rootfs_dir)/usr/bin/mawk" ]; then
+            info "Using 'mawk' to provide /$(br_chroot_brp_dir)/bin/awk"
+            br_chroot ln -sf /usr/bin/mawk "/$(br_chroot_brp_dir)/bin/awk"
+        else
+            fail "No 'awk' available in: $(br_rootfs_dir)
+Tried: /usr/bin/gawk
+Tried: /usr/bin/mawk"
+        fi
+    fi
+
+    export PATH="$BRP_W_AWK_PATH"
 
     # preseed debconf
     if br_list_paths debconfseed.txt -r >/dev/null; then
@@ -461,14 +517,18 @@ function brp_configure_packages () {
         fi
     done
 
-    # run dpkg `--configure -a` twice because of errors during the first run
+    brp_fixup_etc_shells
+
     info "configuring packages..."
-    br_chroot_bind /usr/bin/dpkg --configure -a || \
-    br_chroot_bind /usr/bin/dpkg --configure -a || true
+    br_chroot_bind /usr/bin/dpkg --configure -a
+
+    export PATH="$BRP_OLD_PATH"
 
     # remove our temporary awk symlink as it is no longer required.
-    info "Removing awk temporary symlink"
-    br_chroot rm -f /usr/local/bin/awk
+    if [ -x "/$(br_chroot_brp_dir)/bin/awk" ]; then
+        info "Removing awk temporary symlink"
+        br_chroot rm -f "/$(br_chroot_brp_dir)/bin/awk"
+    fi
 }
 
 function brp_report_hooks_exit_code()
