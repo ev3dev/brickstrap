@@ -270,7 +270,6 @@ function brp_validate_cli_options()
     brp_validate_qemu || [ $? -eq 255 ] # no QEMU specified = 255
 }
 
-
 #####################################################################
 ### Set up the variables for the commands
 
@@ -283,9 +282,6 @@ function brp_init_env()
     export LC_ALL=C LANGUAGE=C LANG=C
     export PATH=$PATH:/usr/local/sbin:/usr/sbin:/sbin
 
-    br_list_paths "multistrap.conf" -r >/dev/null || \
-        fail "Unable to locate a readable 'multistrap.conf'"
-
     for SYSTEM_KERNEL_IMAGE in /boot/vmlinuz-*; do
         [ -r "${SYSTEM_KERNEL_IMAGE}" ] \
             || fail "Cannot read ${SYSTEM_KERNEL_IMAGE} needed by guestfish." \
@@ -296,6 +292,8 @@ function brp_init_env()
         fail "Unprivileged user namespace clone is disabled. Enable it by running" \
             "'sudo sysctl -w kernel.unprivileged_userns_clone=1'."
     fi
+
+    brp_import_extra_components
 
     # source project config file
     if br_list_paths config -r >/dev/null; then
@@ -308,6 +306,9 @@ function brp_init_env()
         br_for_each_path "$(br_list_paths custom-image.sh -r)" \
             brp_run_hook_impl 'loading'
     fi
+
+    br_list_paths "multistrap.conf" -r >/dev/null || \
+        fail "Unable to locate a readable 'multistrap.conf'"
 
     brp_set_destination_defaults
     brp_validate_image_configuration
