@@ -1,1 +1,2 @@
 BOOTSTRAP="ev3dev-Raspbian Raspbian"
+OMITREQUIRED="true"
