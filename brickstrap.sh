@@ -596,6 +596,7 @@ function brp_run_hooks() {
 # username+password, hostname, key fingerprints?)
 function brp_create_report() {
     if br_list_paths "custom-report.sh" -r >/dev/null; then
+        mkdir -p "$(br_report_dir)"
         info "Running custom reporting scripts..."
         br_for_each_path "$(br_list_paths custom-report.sh -r)" \
             brp_run_hook_impl 'executing'
@@ -661,6 +662,7 @@ function brp_delete_all() {
     rm -f "$(br_multistrap_conf)"
     rm -f "$(br_tarball_path)"
     rm -rf "$(br_image_dir)"
+    rm -rf "$(br_report_dir)"
     BRP_PWD=$(pwd)
 
     # if the current working directory is at or underneath the destination
