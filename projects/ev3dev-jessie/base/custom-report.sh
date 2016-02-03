@@ -1,6 +1,6 @@
 # Create a release notes template file.
 
-cat > $(br_dest_dir)/$(br_image_name)-release-notes.md << EOF
+cat > $(br_report_dir)/$(br_image_basename)-release-notes.md << EOF
 Release notes for $(br_image_name)
 ==============================================
 
