@@ -104,17 +104,17 @@ function brp_image_drv_bootroot()
 
     # Handle special case of BeagleBone boot loader
     # See http://elinux.org/Beagleboard:U-boot_partitioning_layout_2.0
-    if [ -z $BB_MLO_FILE ] && [ -f $(br_rootfs_dir)$(br_beaglebone_boot_dir)/MLO ]; then
-        BB_MLO_FILE=$(br_rootfs_dir)$(br_beaglebone_boot_dir)/MLO
+    if [ -z "$BB_MLO_FILE" ] && [ -f "$(br_rootfs_dir)$(br_beaglebone_boot_dir)/MLO" ]; then
+        BB_MLO_FILE="$(br_rootfs_dir)$(br_beaglebone_boot_dir)/MLO"
     fi
-    if [ -f $BB_MLO_FILE ]; then
-        dd if=${BB_MLO_FILE} of="$1" count=1 seek=1 bs=128k conv=notrunc
+    if [ -f "$BB_MLO_FILE" ]; then
+        dd if="$BB_MLO_FILE}"of="$1" count=1 seek=1 bs=128k conv=notrunc
     fi
-    if [ -z $BB_UBOOT_IMG_FILE ] && [ -f $(br_rootfs_dir)$(br_beaglebone_boot_dir)/u-boot.img ]; then
-        BB_UBOOT_IMG_FILE=$(br_rootfs_dir)$(br_beaglebone_boot_dir)/u-boot.img
+    if [ -z "$BB_UBOOT_IMG_FILE" ] && [ -f "$(br_rootfs_dir)$(br_beaglebone_boot_dir)/u-boot.img" ]; then
+        BB_UBOOT_IMG_FILE="$(br_rootfs_dir)$(br_beaglebone_boot_dir)/u-boot.img"
     fi
-    if [ -f $BB_UBOOT_IMG_FILE ]; then
-        dd if=${BB_UBOOT_IMG_FILE} of="$1" count=2 seek=1 bs=384k conv=notrunc
+    if [ -f "$BB_UBOOT_IMG_FILE" ]; then
+        dd if="$BB_UBOOT_IMG_FILE" of="$1" count=2 seek=1 bs=384k conv=notrunc
     fi
 }
 
