@@ -18,6 +18,117 @@
 #
 
 #
+# Extract the component from a file inside a project structure.
+# This works only for files inside the component directory itself.
+# $1: path to translate back to its component name
+#
+function brp_path_to_component()
+{
+    [ $# -eq 1 -a -n "$1" ] && dirname "${1##$(br_project_dir)/}"
+}
+
+#
+# Read an include file which lists components to add, one per line.
+# $1: the file to read.
+#
+function brp_read_include_file()
+{
+    # Add component name to list of extra components.
+    # Avoid duplicate component names being added to BRP_INCLUDES
+    # This could otherwise happen if components from BR_COMPONENTS are also
+    # listed in parsed include files.
+    #
+    BRP_IMPORTED_COMPONENT="$(brp_path_to_component "$1")"
+    brp_is_component_included "$BRP_IMPORTED_COMPONENT" || \
+    if [ -z "$BRP_EXTRA_COMPONENTS" ]; then
+        BRP_INCLUDES="'$BRP_IMPORTED_COMPONENT'"
+    else
+        BRP_INCLUDES="$BRP_INCLUDES '$BRP_IMPORTED_COMPONENT'"
+    fi
+
+    # Read include file
+    while IFS='' read -r BRP_CUR_LINE || [ -n "$BRP_CUR_LINE" ]; do
+        case "$BRP_CUR_LINE" in
+        \#*|\;*) # permit comments: lines starting with # or ; are ignored.
+        ;;
+        *)
+            # avoid redundant spaces, i.e.  empty lines are ignored.
+            # avoid adding duplicate component names
+            if [ -z "${BRP_CUR_LINE##/}" ] || \
+                brp_is_component_included "$BRP_CUR_LINE" || \
+                br_is_component_imported "$BRP_CUR_LINE"; then
+                continue
+            else
+                brp_validate_component_name "$BRP_CUR_LINE"
+                if [ -z "$BRP_EXTRA_COMPONENTS" ]; then
+                    BRP_EXTRA_COMPONENTS="'${BRP_CUR_LINE##/}'"
+                else
+                    BRP_EXTRA_COMPONENTS="$BRP_EXTRA_COMPONENTS '${BRP_CUR_LINE##/}'"
+                fi
+            fi
+        ;;
+        esac
+    done < "$1"
+}
+
+function br_is_component_selected()
+{
+    [ $# -eq 1 -a -n "${1##/}" ] && \
+        echo -n "$BR_COMPONENTS" | fgrep -q "'${1##/}'"
+}
+
+function br_is_include_file_inherited()
+{
+    [ $# -eq 1 -a -n "${1##/}" ] && \
+        echo -n "$BRP_INCLUDES" | fgrep -q "'${1##/}'"
+}
+
+function br_is_component_imported()
+{
+    [ $# -eq 1 -a -n "${1##/}" ] && \
+        echo -n "$BRP_EXTRA_COMPONENTS" | fgrep -q "'${1##/}'"
+}
+
+function brp_is_component_included()
+{
+    br_is_include_file_inherited "$1" || br_is_component_selected "$1"
+}
+
+function brp_is_new_include_file()
+{
+    if brp_is_component_included "$(brp_path_to_component "$1")"; then
+        return 1
+    elif br_is_component_imported "$(brp_path_to_component "$1")" && \
+        [ -r "$1" ]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+#
+# Import extra components by reading include file. This function will
+# iteratively import include files (resolving recursive include structures).
+# Importing terminates once there are no 'new' readable include files left to
+# process.
+#
+function brp_import_extra_components()
+{
+    # for the first round of imports all files are 'new' by definition.
+    BRP_IMPORT_CHECK=-r
+    BRP_INCLUDES=""
+    while br_list_paths include $BRP_IMPORT_CHECK >/dev/null; do
+        br_for_each_path "$(br_list_paths include $BRP_IMPORT_CHECK)" \
+            brp_read_include_file || fail "Failed to process 'include' files"
+        BRP_IMPORT_CHECK=brp_is_new_include_file
+    done
+    debug "Selected components: $BR_COMPONENTS"
+    debug "Inherited includes: $BRP_INCLUDES"
+    debug "Imported components: $BRP_EXTRA_COMPONENTS"
+}
+
+
+#
 # Look up path to the root directory of example/default projects shipped with
 # brickstrap.
 #
@@ -144,7 +255,34 @@ function brp_validate_component_names()
 # Iterate over the configured component names (commandline arguments), invoking
 # callback for each component name. The calling convention is such that the
 # component name is passed as first argument to the callback, and any extra
-# arguments passed to this function are passed along to the callback aftet the
+# arguments passed to this function are passed along to the callback after the
+# component name.
+#
+# $1: the list of components to iterate over.
+# $2: the callback to invoke.
+# $3...: optional: additional arguments passed to the callback following the
+#                  component name.
+#
+function brp_iterate_components_impl()
+{
+    if [ $# -lt 2 -o -z "$1" -o -z "$2" ]; then
+        return 1
+    else
+        BRP_COMP_CB_RETURNCODE=0
+        for BRP_PATHS_CUR_COMP in $1; do
+            eval "BRP_PATHS_CUR_COMP=$BRP_PATHS_CUR_COMP" # unwraps quotes
+            "$2" "${BRP_PATHS_CUR_COMP##/}" "${@:3:$#}" || \
+                BRP_COMP_CB_RETURNCODE=$?
+        done && return $BRP_COMP_CB_RETURNCODE
+    fi
+}
+
+
+#
+# Iterate over the configured component names (commandline arguments), invoking
+# callback for each component name. The calling convention is such that the
+# component name is passed as first argument to the callback, and any extra
+# arguments passed to this function are passed along to the callback after the
 # component name.
 #
 # $1: the callback to invoke.
@@ -153,15 +291,12 @@ function brp_validate_component_names()
 #
 function brp_iterate_components()
 {
-    if [ -z "$BR_COMPONENTS" -o $# -eq 0 -o -z "$1" ]; then
+    if [ -z "$BR_COMPONENTS" ]; then
         return 1
+    elif [ -n "$BRP_EXTRA_COMPONENTS" ]; then
+        brp_iterate_components_impl "$BR_COMPONENTS $BRP_EXTRA_COMPONENTS" "$@"
     else
-        BR_PATHS_CB_RETURNCODE=0
-        for BRP_PATHS_CUR_FILE in $BR_COMPONENTS; do
-            eval "BRP_PATHS_CUR_FILE=$BRP_PATHS_CUR_FILE" # unwraps quotes
-            "$1" "${BRP_PATHS_CUR_FILE##/}" "${@:2:$#}" || \
-                BR_PATHS_CB_RETURNCODE=$?
-        done && return "$BR_PATHS_CB_RETURNCODE"
+        brp_iterate_components_impl "$BR_COMPONENTS" "$@"
     fi
 }
 
