@@ -407,6 +407,7 @@ function brp_run_multistrap() {
 }
 
 function brp_copy_to_root_dir() {
+    debug "Copying ... '$1' to root dir: '$(br_rootfs_dir)'"
     cp --recursive --dereference "$1/"* "$(br_rootfs_dir)/"
 }
 
@@ -421,6 +422,15 @@ function brp_copy_root() {
     else
         info "Skipping: no such directory: root"
     fi
+}
+
+#
+# Provide a standalone command version of brp_copy_root that creates the rootfs
+# directory if necessary (when it does not exist).
+#
+function brp_copy_root_cmd() {
+    mkdir -p "$(br_rootfs_dir)"
+    brp_copy_root
 }
 
 function brp_preseed_debconf() {
@@ -697,7 +707,7 @@ function brp_run_command()
         create-conf)         brp_create_conf;;
         simulate-multistrap) brp_simulate_multistrap;;
         run-multistrap)      brp_run_multistrap;;
-        copy-root)           brp_copy_root;;
+        copy-root)           brp_copy_root_cmd;;
         configure-packages)  brp_configure_packages;;
         run-hook)            brp_run_hook "$2";;
         run-hooks)           brp_run_hooks;;
