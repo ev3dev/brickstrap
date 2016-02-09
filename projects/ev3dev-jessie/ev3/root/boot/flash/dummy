@@ -1,3 +1,0 @@
-This file just makes sure that the /boot/flash directory gets created.
-
-It is not included in the final image.

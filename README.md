@@ -52,7 +52,7 @@ If you just want to run from git, make sure you have these packages installed.
 They will be installed automatically if you use the `brickstrap` package, so you
 can skip this if that is the case.
 
-    sudo apt-get install qemu-user-static, multistrap, libguestfs-tools, uidmap
+    sudo apt-get install qemu-user-static multistrap libguestfs-tools uidmap
 
 If you have never used `libguesfs` before, you need to set it up. **Note:**
 `update-guestfs-appliance` may not exist in newer versions of guestfs. If get
