@@ -1,5 +1,5 @@
 deb http://httpredir.debian.org/debian jessie main contrib non-free
 #deb-src http://httpredir.debian.org/debian jessie main contrib non-free
 
-deb http://ev3dev.org/debian jessie main
-#deb-src http://ev3dev.org/debian jessie main
+deb http://archive.ev3dev.org/debian jessie main
+#deb-src http://archive.ev3dev.org/debian jessie main

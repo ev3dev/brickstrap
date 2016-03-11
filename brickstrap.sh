@@ -125,11 +125,11 @@ Options
                           (applies to create-conf only)
 
   EV3DEV_MIRROR           Specifies the ev3dev mirror used by apt
-                          default: http://ev3dev.org/debian
+                          default: http://archive.ev3dev.org/debian
                           (applies to create-conf only)
 
   EV3DEV_RASPBIAN_MIRROR  Specifies the ev3dev/raspbian mirror used by apt
-                          default: http://ev3dev.org/raspbian
+                          default: http://archive/ev3dev.org/raspbian
                           (applies to create-conf only)
 
 EOF
@@ -362,10 +362,10 @@ function brp_create_conf() {
         RASPBIAN_MIRROR="http://archive.raspbian.org/raspbian"
     fi
     if [ -z "${EV3DEV_MIRROR}" ]; then
-        EV3DEV_MIRROR="http://ev3dev.org/debian"
+        EV3DEV_MIRROR="http://archive.ev3dev.org/debian"
     fi
     if [ -z "${EV3DEV_RASPBIAN_MIRROR}" ]; then
-        EV3DEV_RASPBIAN_MIRROR="http://ev3dev.org/raspbian"
+        EV3DEV_RASPBIAN_MIRROR="http://archive.ev3dev.org/raspbian"
     fi
     info "Creating multistrap configuration file..."
     debug "br_project_dir: $(br_project_dir)"
