@@ -23,6 +23,10 @@
 # uncomment only if you are using BrickPi+
 #dtparam=brickpi_battery=okay
 
+# uncomment only if you are using Raspberry Pi 3
+# by default the Bluetooth uses the same UART as BrickPi
+#dtoverlay=pi3-disable-bt
+
 # uncomment to disable BrickPi LEDs on boot.
 #dtparam=brickpi_led1_trigger=none,brickpi_led2_trigger=none
 
