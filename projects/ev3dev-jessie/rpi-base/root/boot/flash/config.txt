@@ -78,5 +78,14 @@
 
 # uncomment for composite PAL
 #sdtv_mode=2
+
 #uncomment to overclock the arm. 700 MHz is the default.
 #arm_freq=800
+
+# Uncomment this to enable the lirc-rpi module
+#dtoverlay=lirc-rpi
+
+# Additional overlays and parameters are documented /boot/overlays/README
+
+# Enable audio (loads snd_bcm2835)
+dtparam=audio=on
