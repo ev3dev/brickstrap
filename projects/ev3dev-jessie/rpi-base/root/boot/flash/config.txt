@@ -34,6 +34,12 @@
 # gpio 27
 #dtparam=brickpi_led1_gpio=21
 
+# uncomment if you have Adafruit 2.8" resitive touchscreen stacked on top
+#dtoverlay=pitft28-resistive,rotate=90
+
+# uncomment if you have Adafruit 2.8" capacitive touchscreen stacked on top
+#dtoverlay=pitft28-capacitive,rotate=90
+
 # uncomment if you have a mindsensors.com RTC sensor connected to input port 5
 #dtoverlay=i2c-rtc,ds1307
 
