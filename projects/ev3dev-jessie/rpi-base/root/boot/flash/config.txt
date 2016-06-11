@@ -28,7 +28,7 @@
 #dtoverlay=pi3-disable-bt
 
 # uncomment only if you are using BrickPi (not BrickPi+) 
-# and want to use Input Port 5 for I2C/NXT sensor 
+# and want to use Input Port 5 for I2C/NXT sensor, some sensors
 #dtparam=i2c_baudrate=9600
 
 # uncomment to disable BrickPi LEDs on boot.
