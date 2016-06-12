@@ -27,6 +27,11 @@
 # by default the Bluetooth uses the same UART as BrickPi
 #dtoverlay=pi3-disable-bt
 
+# uncomment only if you are using BrickPi (not BrickPi+) 
+# and want to use Input Port 5 for I2C/NXT sensor, some sensors
+# work at higher baudrates so you may want to tweak the value 
+#dtparam=i2c_baudrate=9600
+
 # uncomment to disable BrickPi LEDs on boot.
 #dtparam=brickpi_led1_trigger=none,brickpi_led2_trigger=none
 
