@@ -1,0 +1,2 @@
+# Enable device tree for FatcatLab's EVB
+cape=evb

@@ -1,0 +1,18 @@
+# Download BeagleBone Bootloader
+#
+# To find out the latest stable version of the files, run:
+#
+#    wget https://rcn-ee.com/repos/bootloader/latest/bootloader-ng -q -O - | grep "ABI2:am335x_evm:"
+#
+
+mkdir -p $(br_rootfs_dir)$(br_beaglebone_boot_dir)
+
+wget https://rcn-ee.com/repos/bootloader/am335x_evm/MLO-am335x_evm-v2016.01-r6 \
+    -O $(br_rootfs_dir)$(br_beaglebone_boot_dir)/MLO
+[ "$(md5sum -b < $(br_rootfs_dir)$(br_beaglebone_boot_dir)/MLO)" = "78f06598f5fb83f4fa894b7fa4e29af3 *-" ] \
+    || fail "bad checksum for $(br_rootfs_dir)$(br_beaglebone_boot_dir)/MLO"
+
+wget https://rcn-ee.com/repos/bootloader/am335x_evm/u-boot-am335x_evm-v2016.01-r6.img \
+    -O $(br_rootfs_dir)$(br_beaglebone_boot_dir)/u-boot.img
+[ "$(md5sum -b < $(br_rootfs_dir)$(br_beaglebone_boot_dir)/u-boot.img)" = "9656fd52952dd00bf22a3dfc55864c78 *-" ] \
+    || fail "bad checksum for $(br_rootfs_dir)$(br_beaglebone_boot_dir)/u-boot.img"

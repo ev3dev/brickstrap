@@ -1,0 +1,3 @@
+ARCH="armhf"
+EXTRA_COMPONENTS="debian base"
+BOOTSTRAP="Debian ev3dev ev3dev.test"
