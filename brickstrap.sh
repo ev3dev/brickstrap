@@ -150,7 +150,7 @@ function _fmt () {
   [ "${1}" = "fail" ] && color="${color_error}"
 
   color_reset="\x1b[0m"
-  if [ "${TERM}" != "xterm" ] || [ -t 1 ]; then
+  if [ "${TERM}" != "xterm" ] && [ "${TERM}" != "xterm-256color" ] || [ -t 1 ]; then
     # Don't use colours when using pipes in unrecognised terminals
     color=""
     color_reset=""
