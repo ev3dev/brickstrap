@@ -1,0 +1,74 @@
+#!/bin/sh
+
+# Patched for success in chroot
+# See https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=813621
+
+set -e
+
+chrooted() {
+    if [ "$(stat -c %d/%i /)" = "$(stat -Lc %d/%i /proc/1/root 2>/dev/null)" ]; then
+        # the devicenumber/inode pair of / is the same as that of
+        # /sbin/init's root, so we're *not* in a chroot and hence
+        # return false.
+        return 1
+    fi
+    return 0
+}
+
+case "${1}" in
+    configure)
+        if [ -c /dev/cuse ] && ! chrooted
+        then
+            chmod 0600 /dev/cuse > /dev/null 2>&1
+        fi
+        if ! dpkg-statoverride --list /bin/fusermount > /dev/null 2>&1
+        then
+            chmod 4755 /bin/fusermount
+        fi
+
+        modprobe fuse > /dev/null 2>&1 || true
+
+        if lsmod | grep -qs fuse
+        then
+            if udevadm control --reload-rules > /dev/null 2>&1
+            then
+                if [ -e /dev/fuse ]
+                then
+                    udevadm test --action -p  $(udevadm info -q path -n /dev/fuse) > /dev/null 2>&1
+                fi
+            fi
+        fi
+
+        if [ ! -e /dev/fuse ]
+        then
+            if [ -x /sbin/MAKEDEV ]
+            then
+                echo "Creating fuse device..."
+
+                cd /dev
+                MAKEDEV fuse
+                chmod 0666 /dev/fuse
+            else
+                echo "MAKEDEV not installed, skipping device node creation."
+            fi
+        fi
+
+        if [ -x /usr/sbin/update-initramfs ]
+        then
+            update-initramfs -u
+        fi
+        ;;
+
+    abort-upgrade|abort-remove|abort-deconfigure)
+
+        ;;
+
+    *)
+        echo "postinst called with unknown argument \`${1}'" >&2
+        exit 1
+        ;;
+esac
+
+#DEBHELPER#
+
+exit 0
