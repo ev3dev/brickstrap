@@ -5,7 +5,7 @@
 #              using libguestfs
 #
 # Copyright (C) 2016      Johan Ouwerkerk <jm.ouwerkerk@gmail.com>
-# Copyright (C) 2014-2015 David Lechner <david@lechnology.com>
+# Copyright (C) 2014-2016 David Lechner <david@lechnology.com>
 # Copyright (C) 2014-2015 Ralph Hempel <rhempel@hempeldesigngroup.com>
 #
 # Based on polystrap:
@@ -48,26 +48,36 @@ function br_script_path()
 
 # Commandline options. This defines the usage page
 BRP_USAGE=$(cat <<'EOF'
-Usage: brickstrap -p <project> [-c <component>] [-d <dest>] <command>
+Usage: brickstrap -p <project> -c <component> [-c <component> [...]] [<options>] <new-command>
+       brickstrap [<options>] <step-command>
+
+-p <project>   Directory which contains the brickstrap configuration (project).
+               Values are either a path to the project directory or the name of
+               an example project shipped with brickstrap by default.
+
+-c <component> Selects a component from the project directory.
+
+<new-command>  Command that creates a new brickstrap.conf.d/, namely "create-conf",
+               "create-rootfs" and "all"
+
+<step-command> Command that operates on an existing rootfs (any command that is
+               not a <new-command>).
 
 Options
 -------
--c <component> Select components from the project directory.
-               Multiple components may be selected by specifying multiple '-c'
-               options; at least one component must be specified.
--d <dest>      Destination directory in which brickstrap will store output.
-               This directory will be created if it does not exist.
--p <project>   Directory which contains the brickstrap configuration (project).
-               This option is required and should occur exactly once.
-               Values are either a path to the project directory or the name of
-               an example project shipped with brickstrap by default.
--I <image>     Optional: name of the disk image file to generate (without type
-               suffix).
--l <layout>    Optional: select disk image type to generate (partition layout).
+-d <destdir>   Destination directory in which brickstrap will store output.
+               This directory will be created if it does not exist. If this
+               option is not specified, files will be created in the current
+               working directory.
+
+-I <image>     Name of the disk image file to generate (without type suffix).
+
+-l <layout>    Select disk image type to generate (partition layout).
                If no image type is selected, a 'default' layout is used.
                Projects may support additional custom <layout> types.
--Q <emulator>  Optional: override which QEMU binary to use for emulation of
-               foreign instruction sets.
+
+-Q <emulator>  Override which QEMU binary to use for emulation of foreign
+               instruction sets.
 
                The <emulator> value must be either the path to a binary or
                the name of a Debian or QEMU architecture or the special string
@@ -77,6 +87,7 @@ Options
                then no emulator will be used. Otherwise the system is queried
                for a well known QEMU emulator for the architecture matching the
                <emulator> value.
+
 -x <package>   Blacklist a package (name). The package will not be added to the
                set of packages to install.
 
@@ -84,6 +95,7 @@ Options
                will have no effect. The blacklist will also not prevent the
                package from being included as a dependency of the bootstrap or
                the remaining PACKAGES set.
+
 -X <filename>  Blacklist a package file from the project. The file will be
                ignored while determining the set of packages to install.
 
@@ -91,7 +103,9 @@ Options
                will have no effect. The blacklist will also not prevent
                packages listed in the file from being included as dependencies
                of the bootstrap or the remaining PACKAGES set.
+
 -f             Force overwriting existing files/directories.
+
 -h             Help. (You are looking at it.)
 
   Commands
@@ -252,11 +266,15 @@ function brp_parse_cli_options()
 function brp_sanity_check_cli_options()
 {
     if [ $# -eq 0 -o -z "$1" ]; then
-        brp_help 'No command specified'
-        exit 1
+        fail 'No command specified'
     elif [ "$1" = "run-hook" ] && [ $# -eq 1 -o -z "$2" ]; then
-        brp_help 'No hook specified'
-        exit 1
+        fail 'No hook specified'
+    fi
+    if ! $(brp_is_new_command $1) && [ -n "$BR_PROJECT" ]; then
+        warn 'The -p option is ignored by this command'
+    fi
+    if ! $(brp_is_new_command $1) && [ -n "$BR_COMPONENTS" ]; then
+        warn 'The -c option is ignored by this command'
     fi
     debug "cmd: $1"
 }
@@ -264,8 +282,12 @@ function brp_sanity_check_cli_options()
 function brp_validate_cli_options()
 {
     brp_sanity_check_cli_options "$@"
-    brp_validate_project_name
-    brp_validate_component_names
+    if $(brp_is_new_command $BRP_CMD); then
+        brp_validate_project_name
+        brp_validate_component_names
+    else
+        brp_assert_brickstrap_conf
+    fi
     brp_validate_image_name
     brp_validate_qemu || [ $? -eq 255 ] # no QEMU specified = 255
 }
@@ -282,6 +304,23 @@ function brp_init_env()
     export LC_ALL=C LANGUAGE=C LANG=C
     export PATH=$PATH:/usr/local/sbin:/usr/sbin:/sbin
 
+    #
+    # Set the defaults for mirrors as promised by help, if these have not been
+    # configured for the project yet.
+    #
+    if [ -z "${DEBIAN_MIRROR}" ]; then
+        DEBIAN_MIRROR="http://httpredir.debian.org/debian"
+    fi
+    if [ -z "${RASPBIAN_MIRROR}" ]; then
+        RASPBIAN_MIRROR="http://archive.raspbian.org/raspbian"
+    fi
+    if [ -z "${EV3DEV_MIRROR}" ]; then
+        EV3DEV_MIRROR="http://archive.ev3dev.org/debian"
+    fi
+    if [ -z "${EV3DEV_RASPBIAN_MIRROR}" ]; then
+        EV3DEV_RASPBIAN_MIRROR="http://archive.ev3dev.org/raspbian"
+    fi
+
     for SYSTEM_KERNEL_IMAGE in /boot/vmlinuz-*; do
         [ -r "${SYSTEM_KERNEL_IMAGE}" ] \
             || fail "Cannot read ${SYSTEM_KERNEL_IMAGE} needed by guestfish." \
@@ -293,13 +332,11 @@ function brp_init_env()
             "'sudo sysctl -w kernel.unprivileged_userns_clone=1'."
     fi
 
-    brp_import_extra_components
-
-    # source project config file
-    if br_list_paths config -r >/dev/null; then
-        br_for_each_path "$(br_list_paths config -r)" brp_run_hook_impl \
-            'loading'
+    # brickstrap.conf may not exist yet if this is the first command
+    if [ -f $(brp_brickstrap_conf) ]; then
+        . $(brp_brickstrap_conf)
     fi
+    brp_import_extra_components
 
     # source custom-image.sh driver scripts
     if br_list_paths custom-image.sh -r >/dev/null; then
@@ -307,10 +344,6 @@ function brp_init_env()
             brp_run_hook_impl 'loading'
     fi
 
-    br_list_paths "multistrap.conf" -r >/dev/null || \
-        fail "Unable to locate a readable 'multistrap.conf'"
-
-    brp_set_destination_defaults
     brp_validate_image_configuration
 }
 
@@ -351,25 +384,31 @@ function brp_read_multistrap_conf_file()
 }
 
 function brp_create_conf() {
-    #
-    # Set the defaults for mirrors as promised by help, if these have not been
-    # configured for the project yet.
-    #
-    if [ -z "${DEBIAN_MIRROR}" ]; then
-        DEBIAN_MIRROR="http://httpredir.debian.org/debian"
-    fi
-    if [ -z "${RASPBIAN_MIRROR}" ]; then
-        RASPBIAN_MIRROR="http://archive.raspbian.org/raspbian"
-    fi
-    if [ -z "${EV3DEV_MIRROR}" ]; then
-        EV3DEV_MIRROR="http://archive.ev3dev.org/debian"
-    fi
-    if [ -z "${EV3DEV_RASPBIAN_MIRROR}" ]; then
-        EV3DEV_RASPBIAN_MIRROR="http://archive.ev3dev.org/raspbian"
-    fi
-    info "Creating multistrap configuration file..."
+    debug 'brp_create_conf()'
     debug "br_project_dir: $(br_project_dir)"
 
+    # Create the directory <destdir>/brickstrap.conf/
+
+    if [ -d $(br_brickstrap_conf_dir) ]; then
+        if [ -z ${BR_FORCE} ]; then
+            fail "$(br_brickstrap_conf_dir) already exists. Use -f to replace";
+        else
+            warn "Replacing $(br_brickstrap_conf_dir)"
+            rm -rf $(br_brickstrap_conf_dir)
+        fi
+    fi
+    mkdir -p $(br_brickstrap_conf_dir)
+
+    info "Creating brickstrap configuration file..."
+    debug "creating $(brp_brickstrap_conf)"
+    br_cat_files 'config' > $(brp_brickstrap_conf)
+    echo "BR_PROJECT=${BR_PROJECT}" >> $(brp_brickstrap_conf)
+    echo "BR_COMPONENTS=${BR_COMPONENTS}" >> $(brp_brickstrap_conf)
+
+    # loading now since it was not available in brp_init_env()
+    . $(brp_brickstrap_conf)
+
+    info "Creating multistrap configuration file..."
     if br_list_directories packages >/dev/null; then
         br_for_each_path_iterate_directories \
             "$(br_list_directories packages)" brp_read_package_file
@@ -380,6 +419,39 @@ function brp_create_conf() {
     echo -n > "$(br_multistrap_conf)"
     br_for_each_path "$(br_list_paths multistrap.conf -f)" \
         brp_read_multistrap_conf_file
+
+    info "Merging components..."
+    mkdir -p $(br_hooks_dir)
+    mkdir -p $(br_root_overlay_dir)
+    for component in $(brp_iterate_components 'echo'); do
+        hooks_dir=$(br_project_dir)/$component/hooks
+        if [ -d $hooks_dir ]; then
+            cp --recursive --dereference $hooks_dir/* $(br_hooks_dir)
+        fi
+
+        root_dir=$(br_project_dir)/$component/root
+        if [ -d $root_dir ]; then
+            cp --recursive --dereference $root_dir/* $(br_root_overlay_dir)
+        fi
+
+        for f in "debconfseed.txt" "preinst.blacklist" "tar-exclude" \
+                 "custom-report.sh" "custom-image.sh"
+        do
+            source=$(br_project_dir)/$component/$f
+            dest=$(br_brickstrap_conf_dir)/$f
+
+            if [ -f $source ]; then
+                cat $source >> $dest
+            fi
+        done
+    done
+
+    # move debcofseed.txt inside of the root overlay
+    BRP_DEBCONFSEED=$(br_brickstrap_conf_dir)/debconfseed.txt
+    if [ -f $BRP_DEBCONFSEED ]; then
+        mkdir -p $(br_root_overlay_dir)/$(br_chroot_brp_dir)/
+        mv $BRP_DEBCONFSEED $(br_root_overlay_dir)/$(br_chroot_brp_dir)/
+    fi
 }
 
 function brp_simulate_multistrap() {
@@ -407,22 +479,12 @@ function brp_run_multistrap() {
     brp_setup_qemu_in_rootfs
 }
 
-function brp_copy_to_root_dir() {
-    debug "Copying ... '$1' to root dir: '$(br_rootfs_dir)'"
-    cp --recursive --dereference "$1/"* "$(br_rootfs_dir)/"
-}
-
 function brp_copy_root() {
     info "Copying root files from project definition..."
     debug "br_project_dir: $(br_project_dir)"
     debug "ROOTDIR: $(br_rootfs_dir)"
     brp_check_rootfs_dir
-    if br_list_directories root >/dev/null; then
-        # copy initial directory tree - dereference symlinks
-        br_for_each_path "$(br_list_directories root)" brp_copy_to_root_dir
-    else
-        info "Skipping: no such directory: root"
-    fi
+    cp --recursive --dereference "$(br_root_overlay_dir)/"* "$(br_rootfs_dir)/"
 }
 
 #
@@ -432,12 +494,6 @@ function brp_copy_root() {
 function brp_copy_root_cmd() {
     mkdir -p "$(br_rootfs_dir)"
     brp_copy_root
-}
-
-function brp_preseed_debconf() {
-    cp "$1" "$(br_rootfs_dir)/tmp/debconfseed.txt"
-    br_chroot debconf-set-selections /tmp/debconfseed.txt
-    rm "$(br_rootfs_dir)/tmp/debconfseed.txt"
 }
 
 #
@@ -507,10 +563,9 @@ Tried: /usr/bin/mawk"
     export PATH="$BRP_W_AWK_PATH"
 
     # preseed debconf
-    if br_list_paths debconfseed.txt -r >/dev/null; then
-        info "preseed debconf"
-        br_for_each_path "$(br_list_paths debconfseed.txt -r)" \
-            brp_preseed_debconf
+    if [ -f $(br_brp_dir)/debconfseed.txt ]; then
+        info "Applying debconf preseed..."
+        br_chroot debconf-set-selections /$(br_chroot_brp_dir)/debconfseed.txt
     fi
 
     # run preinst scripts
@@ -543,62 +598,30 @@ Tried: /usr/bin/mawk"
     fi
 }
 
-function brp_report_hooks_exit_code()
-{
-    if [ $1 -ne 0 ]; then
-        error "script failed with exit code $1: '$2'"
-        return $1
-    else
-        info "script completed successfully: '$2'"
-    fi
-}
-
-function brp_run_hook_impl()
-{
-    if [ -n "$2" ]; then
-        info "$1: $2"
-        . "$2"
-        brp_report_hooks_exit_code "$?" "$2"
-    else
-        info "runnning hook: $1"
-        . "$1"
-        brp_report_hooks_exit_code "$?" "$1"
-    fi
-}
-
 function brp_run_hook() {
     brp_check_rootfs_dir
     # completely bogus
     if [ $# -eq 0 -o -z "$1" ]; then
-        brp_help "Empty hook names are invalid"
-        exit 1
-    # a simple hook name which may or may not map to multiple hooks
-    # given the components selection
-    elif [ "$(basename "$1")" = "$1" ] || \
-        [ "hooks/$(basename "$1")" = "$1" ]; then
-        br_for_each_path "$(br_list_paths "hooks/$(basename "$1")" -f)" \
-            brp_run_hook_impl
-    # probably a full path to a single hook script,
-    # should be executed on its own
-    elif br_list_paths "hooks/$(basename "$1")" -f | \
-            fgrep -xq "$(readlink -f "$1")"; then
-        brp_run_hook_impl "$(readlink -f "$1")"
-    # probably bogus
+        fail "Empty hook names are invalid"
     else
-        fail "Invalid hook: '$1'.
-Not part of '$BR_PROJECT' with the given component selection: $BR_COMPONENTS"
+        hook=$(br_hooks_dir)/$1
+
+        info "running hook: $1"
+        debug "$hook"
+        . $hook
+
+        exit_code=$?
+        if [ $exit_code -ne 0 ]; then
+            fail "$1 failed with $exit_code"
+        fi
     fi
 }
 
 function brp_run_hooks() {
     brp_check_rootfs_dir
-    if br_list_directories "hooks" >/dev/null; then
-        info "Running hooks..."
-        br_for_each_path_iterate_directories "$(br_list_directories "hooks")" \
-            brp_run_hook_impl
-    else
-        info "Skipping hooks, no such directory: hooks"
-    fi
+    for hook in $(br_hooks_dir)/*; do
+        brp_run_hook $(basename $hook)
+    done
 }
 
 # Runs a status/config info reporting hook, to be called at the end of the
@@ -606,11 +629,12 @@ function brp_run_hooks() {
 # the build in a single, convenient report. (E.g. root passwd, default account
 # username+password, hostname, key fingerprints?)
 function brp_create_report() {
-    if br_list_paths "custom-report.sh" -r >/dev/null; then
+    BRP_CUSTOM_REPORT=$(br_brickstrap_conf_dir)/custom-report.sh
+
+    if [ -f $BRP_CUSTOM_REPORT ]; then
         mkdir -p "$(br_report_dir)"
         info "Running custom reporting scripts..."
-        br_for_each_path "$(br_list_paths custom-report.sh -r)" \
-            brp_run_hook_impl 'executing'
+        . $BRP_CUSTOM_REPORT
         info "Done with custom reporting scripts."
     else
         info "Skipping custom report, no such scripts: custom-report.sh"
@@ -630,9 +654,12 @@ function brp_create_tar() {
 	    && fail "$(br_tarball_path) exists. Use -f option to overwrite."
     info "creating tarball $(br_tarball_path)"
 
-    info "Excluding files: "
     BRP_EXCLUDE_LIST="$(br_brp_dir)/tar-exclude"
-    br_cat_files tar-exclude | tee "$BRP_EXCLUDE_LIST" && echo "" # add newline
+    BRP_EXCLUDE_SOURCE="$(br_brickstrap_conf_dir)/tar-exclude"
+    if [ -f $BRP_EXCLUDE_SOURCE ]; then
+        info "Excluding files: "
+        cat $BRP_EXCLUDE_SOURCE | tee "$BRP_EXCLUDE_LIST" && echo "" # add newline
+    fi
 
     brp_determine_qemu
     # test if QEMU should be excluded, if so, append it to exclude list
@@ -649,13 +676,10 @@ function brp_create_tar() {
         --exclude="$(br_chroot_brp_dir)" \
         --exclude-from="${BRP_EXCLUDE_LIST##$(br_rootfs_dir)}" .
 
-    if br_list_directories tar-only >/dev/null; then
-        br_for_each_path "$(br_list_directories tar-only)" brp_copy_to_tar_only
-        if [ -d "$(br_brp_dir)/tar-only" ]; then
-            info "Adding tar-only files:"
-            br_chroot tar rvpf "/$(br_chroot_hostfs_dir)/$(br_tarball_path)" \
-                -C "/$(br_chroot_brp_dir)/tar-only" .
-        fi
+    if [ -d "$(br_brp_dir)/tar-only" ]; then
+        info "Adding tar-only files:"
+        br_chroot tar rvpf "/$(br_chroot_hostfs_dir)/$(br_tarball_path)" \
+            -C "/$(br_chroot_brp_dir)/tar-only" .
     fi
 }
 
@@ -737,6 +761,7 @@ function brp_run()
 {
     brp_image_drv_register_defaults
     brp_parse_cli_options "$@"
+    brp_set_destination_defaults
     brp_validate_cli_options "$BRP_CMD" "$BRP_CMD_ARG"
     brp_init_env
     brp_run_command "$BRP_CMD" "$BRP_CMD_ARG"

@@ -18,6 +18,28 @@
 #
 
 #
+# Returns true if $1 is a command that creates a new rootfs (or just brickstrap.conf)
+#
+function brp_is_new_command()
+{
+    if [ "$1" == "create-conf" ] || [ "$1" == "create-rootfs" ] || [ "$1" == "all" ]
+    then
+        return 0
+    fi
+    return 1
+}
+
+#
+# Exits program if brickstrap.conf does not exist
+#
+function brp_assert_brickstrap_conf()
+{
+    if [ ! -f $(brp_brickstrap_conf) ]; then
+        fail "Could not find $(brp_brickstrap_conf) - this is not a brickstrap output directory"
+    fi
+}
+
+#
 # Extract the component from a file inside a project structure.
 # This works only for files inside the component directory itself.
 # $1: path to translate back to its component name
@@ -124,7 +146,7 @@ function brp_import_extra_components()
     done
     debug "Selected components: $BR_COMPONENTS"
     debug "Inherited includes: $BRP_INCLUDES"
-    debug "Imported components: $BRP_EXTRA_COMPONENTS"
+    debug "Included components: $BRP_EXTRA_COMPONENTS"
 }
 
 
@@ -417,7 +439,6 @@ function br_list_directories()
 #  br_for_each_path "$(br_list_directories "$query")" printf 'found: %s\\n' \
 #      || echo "error"
 #
-
 function br_for_each_path()
 {
     BR_PATHS_CB_RETURNCODE=0

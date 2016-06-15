@@ -169,6 +169,22 @@ function br_dest_dir()
 }
 
 #
+# Look up the directory containing the local hooks directory.
+#
+function br_hooks_dir()
+{
+    echo -n "$(br_brickstrap_conf_dir)/hooks"
+}
+
+#
+# Look up the directory containing the local root overlay directory hierarchy.
+#
+function br_root_overlay_dir()
+{
+    echo -n "$(br_brickstrap_conf_dir)/root"
+}
+
+#
 # Look up the directory containing the local rootfs directory hierarchy.
 #
 function br_rootfs_dir()
@@ -279,11 +295,27 @@ function br_chroot_hostfs_dir()
 }
 
 #
+# Look up the path to the local brickstrap configuration directory
+#
+function br_brickstrap_conf_dir()
+{
+    echo -n "$(br_dest_dir)/brickstrap.conf.d"
+}
+
+#
 # Look up the path to the configuration file for use with multistrap
 #
 function br_multistrap_conf()
 {
-    echo -n "$(br_dest_dir)/multistrap.conf"
+    echo -n "$(br_brickstrap_conf_dir)/multistrap.conf"
+}
+
+#
+# Look up the path to the bricstrap configuration file
+#
+function brp_brickstrap_conf()
+{
+    echo -n "$(br_brickstrap_conf_dir)/brickstrap.conf"
 }
 
 #
