@@ -9,7 +9,7 @@ About
 -----
 
 brickstrap is a fork of [polystrap] which was born from [this idea][blog].
-Basically, it automates a stack of other tools to provide and end-to-end
+Basically, it automates a stack of other tools to provide an end-to-end
 solution of turning some configuration files into a bootable image all without
 the need for root privileges. The stack of tools consists of:
 
