@@ -1,6 +1,7 @@
 bsdmainutils
 console-setup
 conspy
+ev3dev-tools
 evtest
 i2c-tools
 less
