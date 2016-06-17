@@ -426,7 +426,10 @@ function brp_create_conf() {
     for component in $(brp_iterate_components 'echo'); do
         hooks_dir=$(br_project_dir)/$component/hooks
         if [ -d $hooks_dir ]; then
-            cp --recursive --dereference $hooks_dir/* $(br_hooks_dir)
+            hooks_dest_prefix=$(br_hooks_dir)/$component
+            for hook in $hooks_dir/*; do
+                cp --dereference $hook $hooks_dest_prefix.$(basename $hook)
+            done
         fi
 
         root_dir=$(br_project_dir)/$component/root
