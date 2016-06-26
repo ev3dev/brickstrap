@@ -285,6 +285,14 @@ function brp_validate_cli_options()
     if $(brp_is_new_command $BRP_CMD); then
         brp_validate_project_name
         brp_validate_component_names
+        if [ -d $(br_brickstrap_conf_dir) ]; then
+            if [ -z ${BR_FORCE} ]; then
+                fail "$(br_brickstrap_conf_dir) already exists. Use -f to replace";
+            else
+                warn "Replacing $(br_brickstrap_conf_dir)"
+                rm -rf $(br_brickstrap_conf_dir)
+            fi
+        fi
     else
         brp_assert_brickstrap_conf
     fi
@@ -388,15 +396,6 @@ function brp_create_conf() {
     debug "br_project_dir: $(br_project_dir)"
 
     # Create the directory <destdir>/brickstrap.conf/
-
-    if [ -d $(br_brickstrap_conf_dir) ]; then
-        if [ -z ${BR_FORCE} ]; then
-            fail "$(br_brickstrap_conf_dir) already exists. Use -f to replace";
-        else
-            warn "Replacing $(br_brickstrap_conf_dir)"
-            rm -rf $(br_brickstrap_conf_dir)
-        fi
-    fi
     mkdir -p $(br_brickstrap_conf_dir)
 
     info "Creating brickstrap configuration file..."
