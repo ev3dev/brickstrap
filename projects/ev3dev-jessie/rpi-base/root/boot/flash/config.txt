@@ -58,7 +58,7 @@
 #dtoverlay=i2c-rtc,ds1307
 
 ################################
-# Standard Raspberri Pi config #
+# Standard Raspberry Pi config #
 ################################
 
 # uncomment if you want to use the camera module
