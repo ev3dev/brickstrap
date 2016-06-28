@@ -66,6 +66,9 @@
 #gpu_mem=128
 #disable_camera_led=1
 
+# uncomment to enable sound (loads snd_bcm2835)
+#dtparam=audio=on
+
 # uncomment if you get no picture on HDMI for a default "safe" mode
 #hdmi_safe=1
 
@@ -110,6 +113,3 @@
 #dtoverlay=lirc-rpi
 
 # Additional overlays and parameters are documented /boot/overlays/README
-
-# Enable audio (loads snd_bcm2835)
-dtparam=audio=on
