@@ -23,9 +23,18 @@
 # uncomment only if you are using BrickPi+
 #dtparam=brickpi_battery=okay
 
-# uncomment only if you are using Raspberry Pi 3
-# by default the Bluetooth uses the same UART as BrickPi
+# If you are using Raspberry Pi 3 you *MUST* uncomment one of the following two
+# options depending on if you plan to use Bluetooth or not. By default the
+# Bluetooth uses the same UART as BrickPi, so the BrickPi will not work with
+# Raspberry Pi 3 if you do not make a change here. Be aware that using Bluetooth
+# on the "miniuart" operates at reduced throughput.
+
+# uncomment to disable Bluetooth on RPi 3
 #dtoverlay=pi3-disable-bt
+
+# uncomment both of these to enable bluetooth on the "miniuart"
+#dtoverlay=pi3-miniuart-bt
+#core_freq=250
 
 # uncomment only if you are using BrickPi (not BrickPi+) 
 # and want to use Input Port 5 for I2C/NXT sensor, some sensors
