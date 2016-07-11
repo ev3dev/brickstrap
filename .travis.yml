@@ -1,0 +1,26 @@
+sudo: required
+dist: trusty
+env:
+  - FLAVOR=ev3-nightly PROJECT=ev3dev-jessie COMPONENTS="-c ev3"
+  - FLAVOR=bone-nightly PROJECT=ev3dev-jessie COMPONENTS="-c bone"
+  - FLAVOR=rpi-nightly PROJECT=ev3dev-jessie COMPONENTS="-c rpi"
+  - FLAVOR=rpi2-nightly PROJECT=ev3dev-jessie COMPONENTS="-c rpi2"
+before_install:
+- sudo apt-add-repository "deb http://archive.ev3dev.org/ubuntu trusty main"
+- sudo apt-key adv --keyserver pgp.mit.edu --recv-keys 2B210565
+- sudo apt-get -qq update
+- sudo apt-get install -y coreutils libguestfs-tools multistrap qemu-user-static uidmap
+before_script:
+- sudo update-guestfs-appliance
+- sudo usermod -a -G kvm $USER
+- sudo chmod +r /boot/vmlinuz-*
+# `sudo -E su $USER -c` is required to make the kvm group take effect
+script: sudo -E su $USER -c './brickstrap.sh -d $FLAVOR -p $PROJECT $COMPONENTS all'
+before_deploy: xz -9 $FLAVOR/images/*.img
+deploy:
+  on: deploy
+  provider: bintray
+  file: $FLAVOR/reports/bintray.json
+  user: dlech
+  key:
+    secure: QGnNCG0bQ1vprSpDKHWCYk0aJec4ABL0dtBo2X5Mtpb5FXbcpc+xwQHBITPOBQaNHG0rFuI1P60723lrzqYnG3yCC5QFFcph3i61dZ/etS1aMyOy5QAhEJGPEP4l9GkMya8ecFh7YFN0hwLlOgMKxeuPCQyII6HgE1Cu87akDTc=
