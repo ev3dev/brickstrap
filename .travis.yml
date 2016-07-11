@@ -3,7 +3,7 @@ dist: trusty
 env:
   - FLAVOR=ev3-nightly PROJECT=ev3dev-jessie COMPONENTS="-c ev3"
   - FLAVOR=bone-nightly PROJECT=ev3dev-jessie COMPONENTS="-c bone"
-  - FLAVOR=rpi-nightly PROJECT=ev3dev-jessie COMPONENTS="-c rpi"
+  - FLAVOR=rpi-nightly PROJECT=ev3dev-jessie COMPONENTS="-c rpi1"
   - FLAVOR=rpi2-nightly PROJECT=ev3dev-jessie COMPONENTS="-c rpi2"
 before_install:
 - sudo apt-add-repository "deb http://archive.ev3dev.org/ubuntu trusty main"
