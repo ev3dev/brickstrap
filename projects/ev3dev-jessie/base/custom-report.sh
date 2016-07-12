@@ -55,7 +55,7 @@ cat > $(br_report_dir)/bintray.json << EOF
 
     "files":
         [
-        {"includePattern": "$(br_image_dir)/(.*).xz", "uploadPattern": "\$1"}
+        {"includePattern": "$(br_image_dir)/(.*\.xz)", "uploadPattern": "\$1"}
         ],
     "publish": true
 }
