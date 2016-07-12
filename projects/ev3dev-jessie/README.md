@@ -1,26 +1,26 @@
 ev3dev.org debian jessie brickstrap project
 -------------------------------------------
 
-This project can create image files for LEGO MINDSTORMS EV3, Raspberry Pi
-and Raspberry Pi 2.
+This project can create image files for LEGO MINDSTORMS EV3, BeagleBone and
+Raspberry Pi.
 
 The configurations used to create official ev3dev.org images are:
 
     # for LEGO MINDSTORMS EV3
-    brickstrap -p ev3dev-jessie -c base -c debian -c ev3 all
+    brickstrap -p ev3dev-jessie -c ev3 all
+    # for BeagleBone
+    brickstrap -p ev3dev-jessie -c bone all
     # for Raspberry Pi (1) Model A/A+/B/B+
-    brickstrap -p ev3dev-jessie -c base -c raspbian -c rpi-base -c rpi1 all
+    brickstrap -p ev3dev-jessie -c rpi1 all
     # for Raspberry Pi 2
-    brickstrap -p ev3dev-jessie -c base -c debian -c rpi-base -c rpi2 all
+    brickstrap -p ev3dev-jessie -c rpi2 all
 
 ### Description of Components
 
-* Core components (required)
+* Core components (included automatically)
 
-    * `base` contains the common files used on all platforms. This should always
-       be included.
-    * `debian` and `raspbian` dictate which package repositories to use. Include
-      one and only one of these.
+    * `base` contains the common files used on all platforms.
+    * `debian` and `raspbian` dictate which package repositories to use.
 
 * Platform components (chose one)
 
