@@ -14,12 +14,6 @@ case "$1" in
     start)
         update-rc.d -f firstboot remove
 
-        # generating ssh host key to be unique
-        for f in rsa dsa ecdsa ed25519; do
-            echo "generating ssh ${f} key..."
-            ssh-keygen -q -t ${f} -f /etc/ssh/ssh_host_${f}_key -C "" -N ""
-        done
-
         # expand the root file system
         # Note, this will break if using an initramfs
         parted --script /dev/mmcblk0 unit % resizepart 2 100%
