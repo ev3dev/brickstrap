@@ -16,7 +16,7 @@ before_script:
 - sudo chmod +r /boot/vmlinuz-*
 # `sudo -E su $USER -c` is required to make the kvm group take effect
 script: sudo -E su $USER -c './brickstrap.sh -d $FLAVOR -p $PROJECT $COMPONENTS all'
-before_deploy: xz -9 $FLAVOR/images/*.img
+before_deploy: xz --verbose -9 $FLAVOR/images/*.img
 deploy:
   on: deploy
   provider: bintray
