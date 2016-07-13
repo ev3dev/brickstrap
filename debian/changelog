@@ -1,3 +1,60 @@
+brickstrap (0.5.0) trusty; urgency=medium
+
+  [ Johan Ouwerkerk ]
+  * Integrate component based path mechanism.
+  * Integrate support for arbitrary architectures in brickstrap itself.
+  * Allow for custom image partition schemes.
+
+  [ David Lechner ]
+  * ev3dev-jessie: add hook for creating /etc/ev3dev-release
+  * ev3dev-jessie: update url in apt sources/list to use httpredir
+  * generic-jessie: Create new project.
+
+  [ Johan Ouwerkerk ]
+  * Better handling of the 'awk' symlink during the package 'configure' step
+  * Add work around for empty/missing /etc/shells.
+  * Introduce a 'reports' directory
+
+  [ David Lechner ]
+  * Improvments to bootroot image driver
+
+  [ Johan Ouwerkerk ]
+  * Enable importing components using a custom 'include' file.
+
+  [ David Lechner ]
+  * ev3dev-jessie: Manually list required packages for raspbian.
+  * [ev3dev-jessie] Add ev3dev.txt configuration file.
+
+  [ David Lechner ]
+  * [ev3dev-jessie] Add git to default packages.
+  * ev3dev-jessie: add RPi 3 device-tree hook
+  * ev3dev-jessie: merge some changes from upstream rpi config.txt
+  * ev3dev-jessie: add section to config.txt for brickpi/rpi3
+  * ev3dev-jessie: add pitfts to config.txt
+  * ev3dev: Initial support for beaglebone/evb
+  * ev3dev: no apt translations
+
+  [ Bartosz Meglicki ]
+  * ev3dev: Add config.txt entry for BrickPi Input Port 5 I2C baudrate
+
+  [ David Lechner ]
+  * Fix colors on Ubuntu 16.04
+  * ev3dev-jessie: Add workaround for broken fuse.postinst script
+  * Use brickstrap.conf.d to store results of merging components
+  * ev3dev-jessie: add ev3dev-tools package
+  * ev3dev-jessie: add python3-libpixyusb package
+  * ev3dev-jessie: no longer need to blacklist ev3-systemd.preinst
+  * ev3dev-jessie: Updates for changes in RPi kernel
+  * ev3dev-jessie: add firmware-rpi package
+  * ev3dev-jessie: add python3-pyudev package
+  * ev3dev-jessie: add mini-uart option for Pi3
+  * ev3dev-jessie: disable audio by default on RPi
+  * ev3dev-jessie: brickpi-systemd package is renamed to rpi-systemd
+  * ev3dev-jessie: fix rpi-base/device-tree hook
+  * ev3dev-jessie: use a fixed ssh host key
+
+ -- David Lechner <david@lechnology.com>  Wed, 13 Jul 2016 17:25:05 -0500
+
 brickstrap (0.4.0) trusty; urgency=medium
 
   [ David Lechner ]

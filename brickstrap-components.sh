@@ -1,5 +1,3 @@
-#!/bin/bash
-#
 # This file is part of brickstrap.
 #
 # brickstrap - create a foreign architecture rootfs using kernel namespaces,
