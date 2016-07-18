@@ -342,9 +342,20 @@ function brp_init_env()
 
     # brickstrap.conf may not exist yet if this is the first command
     if [ -f $(brp_brickstrap_conf) ]; then
-        . $(brp_brickstrap_conf)
+        brp_init_env2
     fi
+
     brp_import_extra_components
+}
+
+#
+# Finish setting up environment.
+#
+# This must be called after brickstrap.conf is created!
+#
+function brp_init_env2()
+{
+    . $(brp_brickstrap_conf)
 
     # source custom-image.sh driver scripts
     if br_list_paths custom-image.sh -r >/dev/null; then
@@ -404,8 +415,8 @@ function brp_create_conf() {
     echo "BR_PROJECT=${BR_PROJECT}" >> $(brp_brickstrap_conf)
     echo "BR_COMPONENTS=${BR_COMPONENTS}" >> $(brp_brickstrap_conf)
 
-    # loading now since it was not available in brp_init_env()
-    . $(brp_brickstrap_conf)
+    # Finish environment init now that we have brickstrap.conf
+    brp_init_env2
 
     info "Creating multistrap configuration file..."
     if br_list_directories packages >/dev/null; then
