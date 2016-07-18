@@ -1,0 +1,8 @@
+# Fix file permissions on private ssh host keys.
+#
+# Git does not preserve file permissions, so we have to fix these up.
+#
+# The actual files are per-platform, so can be found in bone/ev3/rpi1/rpi2
+# directories.
+
+chmod go-r $(br_rootfs_dir)/etc/ssh/ssh_host_*_key
