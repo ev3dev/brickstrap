@@ -5,4 +5,4 @@
 # The actual files are per-platform, so can be found in bone/ev3/rpi1/rpi2
 # directories.
 
-chmod go-r $(br_rootfs_dir)/etc/ssh/ssh_host_*_key
+chmod 600 $(br_rootfs_dir)/etc/ssh/ssh_host_*_key
