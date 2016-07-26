@@ -3,13 +3,13 @@ git
 guile-1.8
 lua5.2
 python
-python-ev3dev
 python-evdev
 python-gobject
 python-pyudev
 python-setuptools
 python-smbus
 python3
+python3-ev3dev
 python3-evdev
 python3-pyudev
 python3-setuptools
