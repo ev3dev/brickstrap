@@ -115,7 +115,7 @@ Board Configuration Directories
 
 Each directory in this repository represents a board configuration. Any board
 that is not actively maintained should be moved to the `_unmaintained` directory.
-You can create a new board configuration by copying one if the existing ones.
+You can create a new board configuration by copying one of the existing ones.
 
 __Note:__ brickstrap will look for a board configuration directory in the current
 working directory and then in the directory where `brickstrap.sh` is located.
