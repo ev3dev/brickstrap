@@ -220,7 +220,7 @@ case $1 in
          # using < 4GB to fit on *any* ~4GB storage
         BRICKSTRAP_IMAGE_FILE_SIZE=${BRICKSTRAP_IMAGE_FILE_SIZE:-"3800M"}
         BRICKSTRAP_BOOT_PART_LABEL=${BRICKSTRAP_BOOT_PART_LABEL:-"BOOT"}
-        BRICKSTRAP_ROOT_PART_LABEL=${BRICKSTRAP_BOOT_PART_LABEL:-"ROOTFS"}
+        BRICKSTRAP_ROOT_PART_LABEL=${BRICKSTRAP_ROOT_PART_LABEL:-"ROOTFS"}
         brickstrap_create_image
         ;;
     add-beagle-bootloader)
