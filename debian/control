@@ -1,0 +1,16 @@
+Source: brickstrap
+Maintainer: David Lechner <david@lechnology.com>
+Section: misc
+Priority: optional
+Standards-Version: 3.9.5
+Build-Depends: debhelper (>=8.0.0), pandoc
+VCS-Git: git://github.com/ev3dev-dpkg/brickstrap.git
+VCS-Browser: https://github.com/ev3dev-dpkg/brickstrap.git
+
+Package: brickstrap
+Architecture: all
+Depends: docker-engine, libguestfs-tools, ${misc:Depends}
+Recommends: qemu-user-static
+Description: Create bootable disk images from Docker images
+ Tool to create bootable disk images from Docker images targeted at embedded
+ systems.

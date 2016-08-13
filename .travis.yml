@@ -1,0 +1,31 @@
+language: bash
+sudo: required
+dist: trusty
+env:
+  - IMAGE=ev3dev-jessie-ev3-generic
+  - IMAGE=ev3dev-jessie-bone-generic BEAGLE_BOOT=true
+  - IMAGE=ev3dev-jessie-rpi-generic
+  - IMAGE=ev3dev-jessie-rpi2-generic
+before_install:
+- sudo apt-add-repository "deb http://archive.ev3dev.org/ubuntu trusty main"
+- sudo apt-key adv --keyserver pgp.mit.edu --recv-keys 2B210565
+- sudo apt-get -qq update
+- sudo apt-get install -y coreutils libguestfs-tools multistrap qemu-user-static uidmap
+before_script:
+- sudo update-guestfs-appliance
+- sudo usermod -a -G kvm $USER
+- sudo chmod +r /boot/vmlinuz-*
+- export DOCKER_IMAGE=ev3dev/$IMAGE
+- export DISK_IMAGE=$IMAGE-$(date --iso-8601)
+script:
+- ./brickstrap.sh create-tar $DOCKER_IMAGE $DISK_IMAGE.tar
+# `sudo -E su $USER -c` is required to make the kvm group take effect
+- sudo -E su $USER -c './brickstrap.sh create-image $DISK_IMAGE.tar $DISK_IMAGE.img'
+- if [ "$BEAGLE_BOOT" == "true" ]; then
+    ./brickstrap.sh add-beagle-bootloader $DOCKER_IMAGE $DISK_IMAGE.img;
+  fi
+after_success:
+- if [ -n "$TRAVIS_TAG" ]; then
+    xz --verbose -9 $DISK_IMAGE.img
+    echo "TODO - upload $DISK_IMAGE.img.xz somewhere";
+  fi

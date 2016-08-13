@@ -1,0 +1,6 @@
+brickstrap (0.6.0) trusty; urgency=medium
+
+  * Initial release of 0.6.x. This a completely new program compared to previous
+    versions of brickstrap.
+
+ -- David Lechner <david@lechnology.com>  Fri, 12 Aug 2016 22:25:46 -0500
