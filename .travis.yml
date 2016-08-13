@@ -2,10 +2,15 @@ language: bash
 sudo: required
 dist: trusty
 env:
+  matrix:
   - IMAGE=ev3dev-jessie-ev3-generic
   - IMAGE=ev3dev-jessie-bone-generic BEAGLE_BOOT=true
   - IMAGE=ev3dev-jessie-rpi-generic
   - IMAGE=ev3dev-jessie-rpi2-generic
+  global:
+  - BRICKSTRAP_IMAGE_FILE_SIZE=1800M
+  - BRICKSTRAP_BOOT_PART_LABEL=EV3DEV_BOOT
+  - BRICKSTRAP_ROOT_PART_LABEL=EV3DEV_ROOTFS
 before_install:
 - sudo apt-add-repository "deb http://archive.ev3dev.org/ubuntu trusty main"
 - sudo apt-key adv --keyserver pgp.mit.edu --recv-keys 2B210565
