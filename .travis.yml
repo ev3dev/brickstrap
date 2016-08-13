@@ -12,10 +12,7 @@ env:
   - BRICKSTRAP_BOOT_PART_LABEL=EV3DEV_BOOT
   - BRICKSTRAP_ROOT_PART_LABEL=EV3DEV_ROOTFS
 before_install:
-- sudo apt-add-repository "deb http://archive.ev3dev.org/ubuntu trusty main"
-- sudo apt-key adv --keyserver pgp.mit.edu --recv-keys 2B210565
-- sudo apt-get -qq update
-- sudo apt-get install -y coreutils libguestfs-tools multistrap qemu-user-static uidmap
+- sudo apt-get install -y libguestfs-tools qemu-user-static
 before_script:
 - sudo update-guestfs-appliance
 - sudo usermod -a -G kvm $USER
