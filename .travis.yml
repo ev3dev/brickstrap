@@ -28,6 +28,8 @@ script:
 - if [ "$BEAGLE_BOOT" == "true" ]; then
     ./brickstrap.sh add-beagle-bootloader $DOCKER_IMAGE $DISK_IMAGE.img;
   fi
+- ./brickstrap.sh create-report $DOCKER_IMAGE $HOME/report
+- test -f "$HOME/report/$DISK_IMAGE-release-notes.md"
 after_success:
 - if [ "$TRAVIS_PULL_REQUEST" == "false" ] && [ "$TRAVIS_BRANCH" == "nightly" ]; then
     xz --verbose -9 $DISK_IMAGE.img;
