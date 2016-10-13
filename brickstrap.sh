@@ -209,6 +209,34 @@ function brickstrap_add_beaglebone_bootloader()
     echo "done"
 }
 
+function brickstrap_create_report()
+{
+    if [ ! -n "$BRICKSTRAP_DOCKER_IMAGE_NAME" ]; then
+        echo "Error: docker image not specified"
+        brickstrap_show_usage
+        exit 1
+    fi
+
+    if [ ! -n "$BRICKSTRAP_REPORT_DIR_NAME" ]; then
+        echo "Error: report directory name not specified"
+        brickstrap_show_usage
+        exit 1
+    fi
+
+    echo "Creating reports..."
+
+    mkdir -p $BRICKSTRAP_REPORT_DIR_NAME
+
+    brickstrap_report_out="$(readlink -f $BRICKSTRAP_REPORT_DIR_NAME)"
+    docker run --rm --user root \
+        --env BRICKSTRAP_DOCKER_IMAGE_NAME="$BRICKSTRAP_DOCKER_IMAGE_NAME" \
+        --volume "$brickstrap_report_out":"/brickstrap/_report/_out" \
+        $BRICKSTRAP_DOCKER_IMAGE_NAME find /brickstrap/_report \
+            -executable -a -type f -exec echo "Running" {} "..." \; -exec {} \;
+
+    echo "done"
+}
+
 case $1 in
     create-tar)
         BRICKSTRAP_DOCKER_IMAGE_NAME=$2
@@ -228,6 +256,11 @@ case $1 in
         BRICKSTRAP_DOCKER_IMAGE_NAME=$2
         BRICKSTRAP_IMAGE_FILE_NAME=$3
         brickstrap_add_beaglebone_bootloader
+        ;;
+    create-report)
+        BRICKSTRAP_DOCKER_IMAGE_NAME=$2
+        BRICKSTRAP_REPORT_DIR_NAME=$3
+        brickstrap_create_report
         ;;
     *)
         echo "Error: invalid arguments"

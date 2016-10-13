@@ -15,6 +15,8 @@ brickstrap create-image \<*tar-file*> \<*image-file*>
 
 brickstrap add-beagle-bootloader \<*docker-image*> \<*image-file*>
 
+brickstrap create-report \<*docker-image*> \<*report-directory*>
+
 
 # DESCRIPTION
 
@@ -41,6 +43,10 @@ that will affect the creation of the image.
 : Writes Beagle board bootloader files to the existing disk image. See *BEAGLE
 BOOTLOADER* below for details.
 
+`create-report`
+: Creates a report from the docker image. See the *DOCKER IMAGE* section below
+for details.
+
 
 # OPTIONS
 
@@ -57,6 +63,9 @@ The `create-image` file uses this as the source.
 : The name of the raw disk image file. The `create-image` command will create
 this file. The `add-beagle-bootloader` command will modify this file.
 
+*report-directory*
+: The directory where reports will be generated. This directory will be created
+if it does not already exist.
 
 # DOCKER IMAGE
 
@@ -101,6 +110,16 @@ a real-life example of how Docker images are created for use with `brickstrap`.
 
     This directory becomes the boot partition (FAT) of the disk image. Place
     any boot files here.
+
+* __The `/brickstrap/_report` directory__
+
+    Any executable files in this directory or its subdirectories will be run as
+    part of the `brickstrap create-report` command. The files should save any
+    reports in the `brickstrap/_report/_out` directory, which is bind-mounted
+    to the *report-directory* on the host system given by the command. Note:
+    This will have the effect of running any executable files inside of
+    *report-directory* too. The `BRICKSTRAP_DOCKER_IMAGE_NAME` environment
+    variable will be set to *docker-image* when these commands are executed.
 
 
 # BEAGLE BOOTLOADER
