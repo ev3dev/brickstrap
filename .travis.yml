@@ -32,7 +32,7 @@ script:
 - test -f "$HOME/report/$DISK_IMAGE-release-notes.md"
 after_success:
 - if [ "$TRAVIS_PULL_REQUEST" == "false" ] && [ "$TRAVIS_BRANCH" == "nightly" ]; then
-    xz --verbose -9 $DISK_IMAGE.img;
-    mv $DISK_IMAGE.img.xz nightly-$DISK_IMAGE.img.xz;
+    xz --verbose -9 $DISK_IMAGE.img &&
+    mv $DISK_IMAGE.img.xz nightly-$DISK_IMAGE.img.xz &&
     curl -u$LOGIN -T nightly-$DISK_IMAGE.img.xz https://oss.jfrog.org/artifactory/oss-snapshot-local/org/ev3dev/brickstrap/$(date --iso-8601)/;
   fi
