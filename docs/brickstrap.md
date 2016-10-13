@@ -6,6 +6,7 @@
 
 brickstrap - Create bootable disk images from Docker images
 
+
 # SYNOPSIS
 
 brickstrap create-tar \<*docker-image*> \<*tar-file*>
@@ -13,6 +14,7 @@ brickstrap create-tar \<*docker-image*> \<*tar-file*>
 brickstrap create-image \<*tar-file*> \<*image-file*>
 
 brickstrap add-beagle-bootloader \<*docker-image*> \<*image-file*>
+
 
 # DESCRIPTION
 
@@ -23,6 +25,7 @@ manual. See <https://docs.docker.com/engine/> for more info.
 Note: Although "brick" is generally a bad word in the embedded world, the
 "brick" in `brickstrap` comes from the fact that this tool was originally
 developed to create image files for the LEGO MINDSTORMS EV3 programmable brick.
+
 
 # COMMANDS
 
@@ -38,6 +41,7 @@ that will affect the creation of the image.
 : Writes Beagle board bootloader files to the existing disk image. See *BEAGLE
 BOOTLOADER* below for details.
 
+
 # OPTIONS
 
 *docker-image*
@@ -52,6 +56,7 @@ The `create-image` file uses this as the source.
 *image-file*
 : The name of the raw disk image file. The `create-image` command will create
 this file. The `add-beagle-bootloader` command will modify this file.
+
 
 # DOCKER IMAGE
 
@@ -97,6 +102,7 @@ a real-life example of how Docker images are created for use with `brickstrap`.
     This directory becomes the boot partition (FAT) of the disk image. Place
     any boot files here.
 
+
 # BEAGLE BOOTLOADER
 
 Beagle boards have a unique way of handling the bootloader files by placing
@@ -112,6 +118,7 @@ You can find the latest stable BeagleBone bootloader by running:
 
     wget https://rcn-ee.com/repos/bootloader/latest/bootloader-ng \
         -q -O - | grep "ABI2:am335x_evm:"
+
 
 # ENVIRONMENT
 
