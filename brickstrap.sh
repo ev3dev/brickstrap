@@ -55,7 +55,7 @@ function brickstrap_create_tar()
 
     echo "Checking docker image tar version..."
 
-    BRICKSTRAP_DOCKER_IMAGE_TAR_VERSION=$(docker run --rm $BRICKSTRAP_DOCKER_IMAGE_NAME \
+    BRICKSTRAP_DOCKER_IMAGE_TAR_VERSION=$(docker run --rm --user root $BRICKSTRAP_DOCKER_IMAGE_NAME \
         dpkg-query --show --showformat '${Version}' tar)
 
     echo "tar $BRICKSTRAP_DOCKER_IMAGE_TAR_VERSION"
@@ -63,7 +63,7 @@ function brickstrap_create_tar()
     if dpkg --compare-versions $BRICKSTRAP_DOCKER_IMAGE_TAR_VERSION ge 1.28; then
         BRICKSTRAP_TAR_EXCLUDE_OPTION="--exclude-ignore .brickstrap-tar-exclude"
     else
-        if docker run --rm $BRICKSTRAP_DOCKER_IMAGE_NAME test -f /brickstrap/_tar-exclude; then
+        if docker run --rm --user root $BRICKSTRAP_DOCKER_IMAGE_NAME test -f /brickstrap/_tar-exclude; then
             BRICKSTRAP_TAR_EXCLUDE_OPTION="--exclude-from /brickstrap/_tar-exclude"
         fi
     fi
@@ -72,7 +72,8 @@ function brickstrap_create_tar()
 
     echo "Creating $BRICKSTRAP_TAR_FILE from $BRICKSTRAP_DOCKER_IMAGE_NAME..."
 
-    docker run --rm -v $(pwd):/brickstrap/_tar-out $BRICKSTRAP_DOCKER_IMAGE_NAME \
+    docker run --rm --user root --volume "$(pwd)":/brickstrap/_tar-out \
+        $BRICKSTRAP_DOCKER_IMAGE_NAME \
         tar --create \
             --one-file-system \
             --preserve-permissions \
@@ -87,9 +88,10 @@ function brickstrap_create_tar()
 
     # There can be extra files that need to get added to the archive
 
-    if docker run --rm $BRICKSTRAP_DOCKER_IMAGE_NAME test -d "/brickstrap/_tar-only"; then
+    if docker run --rm --user root $BRICKSTRAP_DOCKER_IMAGE_NAME test -d "/brickstrap/_tar-only"; then
         echo 'Appending /brickstrap/_tar-only/*'
-        docker run --rm -v $(pwd):/brickstrap/_tar-out $BRICKSTRAP_DOCKER_IMAGE_NAME \
+        docker run --rm --user root --volume "$(pwd)":/brickstrap/_tar-out \
+            $BRICKSTRAP_DOCKER_IMAGE_NAME \
             tar --append \
                 --preserve-permissions \
                 --file "/brickstrap/_tar-out/$BRICKSTRAP_TAR_FILE" \
@@ -201,9 +203,9 @@ function brickstrap_add_beaglebone_bootloader()
     echo "Writing bootloader files to disk image..."
 
     # See http://elinux.org/Beagleboard:U-boot_partitioning_layout_2.0
-    docker run --rm $BRICKSTRAP_DOCKER_IMAGE_NAME cat "/brickstrap/_beagle-boot/MLO" \
+    docker run --rm --user root $BRICKSTRAP_DOCKER_IMAGE_NAME cat "/brickstrap/_beagle-boot/MLO" \
         | dd of="$BRICKSTRAP_IMAGE_FILE_NAME" count=1 seek=1 bs=128k conv=notrunc iflag=fullblock
-    docker run --rm $BRICKSTRAP_DOCKER_IMAGE_NAME cat "/brickstrap/_beagle-boot/u-boot.img" \
+    docker run --rm --user root $BRICKSTRAP_DOCKER_IMAGE_NAME cat "/brickstrap/_beagle-boot/u-boot.img" \
         | dd of="$BRICKSTRAP_IMAGE_FILE_NAME" count=2 seek=1 bs=384k conv=notrunc iflag=fullblock
 
     echo "done"
