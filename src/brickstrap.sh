@@ -33,6 +33,7 @@ function brickstrap_show_usage()
     echo "    brickstrap create-tar <docker-image> <tar-file>"
     echo "    brickstrap create-image <tar-file> <image-file>"
     echo "    brickstrap add-beagle-bootloader <docker-image> <image-file>"
+    echo "    brickstrap create-report <docker-image> <report-directory>"
 }
 
 function brickstrap_create_tar()
