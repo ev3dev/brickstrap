@@ -259,14 +259,32 @@ function brickstrap_create_report()
 
     echo "Creating reports..."
 
+    # create a docker volume to persist data between docker commands
+    brickstrap_report_volume=$(mktemp brickstrap.XXXXXX --dry-run)
+    docker volume create --name $brickstrap_report_volume
+    trap "docker volume rm $brickstrap_report_volume" EXIT
+
     mkdir -p $BRICKSTRAP_REPORT_DIR_NAME
 
-    brickstrap_report_out="$(readlink -f $BRICKSTRAP_REPORT_DIR_NAME)"
+    brickstrap_report_dir="$(readlink -f $BRICKSTRAP_REPORT_DIR_NAME)"
     docker run --rm --user root \
         --env BRICKSTRAP_DOCKER_IMAGE_NAME="$BRICKSTRAP_DOCKER_IMAGE_NAME" \
-        --volume "$brickstrap_report_out":"/brickstrap/_report/_out" \
+        --volume "$brickstrap_report_volume":/brickstrap/_report/_out \
         $BRICKSTRAP_DOCKER_IMAGE_NAME find /brickstrap/_report \
             -executable -a -type f -exec echo "Running" {} "..." \; -exec {} \;
+
+    # change ownership to current host uid:gid
+    docker run --rm --user root \
+        --volume "$brickstrap_report_volume":/brickstrap/_report/_out \
+        $BRICKSTRAP_DOCKER_IMAGE_NAME \
+        chown --recursive $(id -u):$(id -g) /brickstrap/_report/_out
+
+    # copy the output directory to the host directory
+    docker run --rm --user root \
+        --volume "$brickstrap_report_volume":/brickstrap/_report/_out \
+        --volume "$brickstrap_report_dir":/brickstrap/_report/_host \
+        $BRICKSTRAP_DOCKER_IMAGE_NAME \
+        sh -c 'mv /brickstrap/_report/_out/* /brickstrap/_report/_host/'
 
     echo "done"
 }
