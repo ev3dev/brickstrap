@@ -1,3 +1,12 @@
+brickstrap (0.6.2) trusty; urgency=medium
+
+  * Fix tar archive owned by root:root
+  * Add create-report command to usage
+  * Allow creating tar archive anywhere
+  * Fix ownership of files created by create-report
+
+ -- David Lechner <david@lechnology.com>  Mon, 17 Oct 2016 16:39:12 -0500
+
 brickstrap (0.6.1) trusty; urgency=medium
 
   [ Uladzislau Shablinski ]
