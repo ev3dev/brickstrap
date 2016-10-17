@@ -21,7 +21,7 @@ Since `brickstrap` is essentially just a bash script, you can run directly from
 the source code.
 
     git clone git://github.com/ev3dev/brickstrap
-    brickstrap/brickstrap.sh create-tar my-docker-image my.tar
+    brickstrap/src/brickstrap.sh create-tar my-docker-image my.tar
 
 There is also a Debian package available for Ubuntu trusty in the ev3dev package
 repository.

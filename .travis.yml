@@ -22,13 +22,13 @@ before_script:
 - export DISK_IMAGE=$(docker run --rm $DOCKER_IMAGE sh -c 'echo $BRICKSTRAP_IMAGE_NAME')
 script:
 - test -n "$DISK_IMAGE"
-- ./brickstrap.sh create-tar $DOCKER_IMAGE $DISK_IMAGE.tar
+- src/brickstrap.sh create-tar $DOCKER_IMAGE $DISK_IMAGE.tar
 # `sudo -E su $USER -c` is required to make the kvm group take effect
-- sudo -E su $USER -c './brickstrap.sh create-image $DISK_IMAGE.tar $DISK_IMAGE.img'
+- sudo -E su $USER -c 'src/brickstrap.sh create-image $DISK_IMAGE.tar $DISK_IMAGE.img'
 - if [ "$BEAGLE_BOOT" == "true" ]; then
-    ./brickstrap.sh add-beagle-bootloader $DOCKER_IMAGE $DISK_IMAGE.img;
+    src/brickstrap.sh add-beagle-bootloader $DOCKER_IMAGE $DISK_IMAGE.img;
   fi
-- ./brickstrap.sh create-report $DOCKER_IMAGE $HOME/report
+- src/brickstrap.sh create-report $DOCKER_IMAGE $HOME/report
 - test -f "$HOME/report/$DISK_IMAGE-release-notes.md"
 after_success:
 - if [ "$TRAVIS_PULL_REQUEST" == "false" ] && [ "$TRAVIS_BRANCH" == "nightly" ]; then
