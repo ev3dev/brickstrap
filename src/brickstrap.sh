@@ -73,6 +73,10 @@ function brickstrap_create_tar()
 
     echo "Creating $BRICKSTRAP_TAR_FILE from $BRICKSTRAP_DOCKER_IMAGE_NAME..."
 
+    brickstrap_tar_path=$(readlink -f "$BRICKSTRAP_TAR_FILE")
+    brickstrap_tar_dir=$(dirname "$brickstrap_tar_path")
+    brickstrap_tar_base=$(basename "$brickstrap_tar_path")
+
     # create a docker volume to persist data between docker commands
     brickstrap_tar_volume=$(mktemp brickstrap.XXXXXX --dry-run)
     docker volume create --name $brickstrap_tar_volume
@@ -87,7 +91,7 @@ function brickstrap_create_tar()
             --exclude "./brickstrap" \
             --exclude ".dockerenv" \
             $BRICKSTRAP_TAR_EXCLUDE_OPTION \
-            --file "/brickstrap/_tar-out/$BRICKSTRAP_TAR_FILE" \
+            --file "/brickstrap/_tar-out/$brickstrap_tar_base" \
             --directory "/" \
             .
 
@@ -103,7 +107,7 @@ function brickstrap_create_tar()
             $BRICKSTRAP_DOCKER_IMAGE_NAME \
             tar --append \
                 --preserve-permissions \
-                --file "/brickstrap/_tar-out/$BRICKSTRAP_TAR_FILE" \
+                --file "/brickstrap/_tar-out/$brickstrap_tar_base" \
                 --directory "/brickstrap/_tar-only" \
                 .
         echo "done"
@@ -112,19 +116,19 @@ function brickstrap_create_tar()
 
     # Finally, move the tar archive from the docker volume to the host $PWD
 
-    echo "Copying $BRICKSTRAP_TAR_FILE to $(pwd) ..."
+    echo "Copying $brickstrap_tar_base to $brickstrap_tar_dir ..."
 
     # change ownership to current host computer uid:gid
     docker run --rm --user root \
         --volume $brickstrap_tar_volume:/brickstrap/_tar-out \
         $BRICKSTRAP_DOCKER_IMAGE_NAME \
-        chown $(id -u):$(id -g) "/brickstrap/_tar-out/$BRICKSTRAP_TAR_FILE"
+        chown $(id -u):$(id -g) "/brickstrap/_tar-out/$brickstrap_tar_base"
 
     docker run --rm --user root \
         --volume $brickstrap_tar_volume:/brickstrap/_tar-out \
-        --volume "$(pwd)":/brickstrap/_pwd \
+        --volume "$brickstrap_tar_dir":/brickstrap/_host \
         $BRICKSTRAP_DOCKER_IMAGE_NAME \
-        mv "/brickstrap/_tar-out/$BRICKSTRAP_TAR_FILE" /brickstrap/_pwd/
+        mv "/brickstrap/_tar-out/$brickstrap_tar_base" /brickstrap/_host/
 
     echo "done"
 }
