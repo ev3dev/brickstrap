@@ -1,3 +1,14 @@
+brickstrap (0.6.1) trusty; urgency=medium
+
+  [ Uladzislau Shablinski ]
+  * Check if /brickstrap/_tar-exclude exists in docker
+
+  [ David Lechner ]
+  * Add create-report command
+  * Run all docker commands with "--user root"
+
+ -- David Lechner <david@lechnology.com>  Mon, 17 Oct 2016 11:32:32 -0500
+
 brickstrap (0.6.0) trusty; urgency=medium
 
   * Initial release of 0.6.x. This a completely new program compared to previous
