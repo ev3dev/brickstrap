@@ -75,14 +75,20 @@ function brickstrap_create_tar()
     brickstrap_tar_dir=$(dirname "$brickstrap_tar_path")
     brickstrap_tar_base=$(basename "$brickstrap_tar_path")
 
-    # create a docker volume to persist data between docker commands
-    brickstrap_tar_volume=$(mktemp brickstrap.XXXXXX --dry-run)
-    docker volume create --name $brickstrap_tar_volume
-    trap "docker volume rm $brickstrap_tar_volume" EXIT
-
-    docker run --rm --user root \
-        --volume $brickstrap_tar_volume:/brickstrap/_tar-out \
+    # create a docker container to persist data between docker commands
+    brickstrap_tar_container=$(mktemp brickstrap.XXXXXX --dry-run)
+    docker create \
+        --name $brickstrap_tar_container \
+        --user root \
+        --tty \
         $BRICKSTRAP_DOCKER_IMAGE_NAME \
+        tail > /dev/null
+    trap "docker rm --force $brickstrap_tar_container > /dev/null" EXIT
+
+    docker start $brickstrap_tar_container > /dev/null
+
+    docker exec $brickstrap_tar_container mkdir -p /brickstrap/_tar-out
+    docker exec $brickstrap_tar_container \
         tar --create \
             --one-file-system \
             --preserve-permissions \
@@ -102,11 +108,9 @@ function brickstrap_create_tar()
 
     # There can be extra files that need to get added to the archive
 
-    if docker run --rm --user root $BRICKSTRAP_DOCKER_IMAGE_NAME test -d "/brickstrap/_tar-only"; then
+    if docker exec $brickstrap_tar_container test -d "/brickstrap/_tar-only"; then
         echo 'Appending /brickstrap/_tar-only/*'
-        docker run --rm --user root \
-            --volume $brickstrap_tar_volume:/brickstrap/_tar-out \
-            $BRICKSTRAP_DOCKER_IMAGE_NAME \
+        docker exec $brickstrap_tar_container \
             tar --append \
                 --preserve-permissions \
                 --file "/brickstrap/_tar-out/$brickstrap_tar_base" \
@@ -116,21 +120,13 @@ function brickstrap_create_tar()
     fi
 
 
-    # Finally, move the tar archive from the docker volume to the host $PWD
+    # Finally, move the tar archive from the docker container to the host $PWD
 
     echo "Copying $brickstrap_tar_base to $brickstrap_tar_dir ..."
 
-    # change ownership to current host computer uid:gid
-    docker run --rm --user root \
-        --volume $brickstrap_tar_volume:/brickstrap/_tar-out \
-        $BRICKSTRAP_DOCKER_IMAGE_NAME \
-        chown $(id -u):$(id -g) "/brickstrap/_tar-out/$brickstrap_tar_base"
-
-    docker run --rm --user root \
-        --volume $brickstrap_tar_volume:/brickstrap/_tar-out \
-        --volume "$brickstrap_tar_dir":/brickstrap/_host \
-        $BRICKSTRAP_DOCKER_IMAGE_NAME \
-        mv "/brickstrap/_tar-out/$brickstrap_tar_base" /brickstrap/_host/
+    docker cp \
+        $brickstrap_tar_container:"/brickstrap/_tar-out/$brickstrap_tar_base" \
+        "$brickstrap_tar_dir"
 
     echo "done"
 }
