@@ -63,10 +63,8 @@ function brickstrap_create_tar()
 
     if dpkg --compare-versions $BRICKSTRAP_DOCKER_IMAGE_TAR_VERSION ge 1.28; then
         BRICKSTRAP_TAR_EXCLUDE_OPTION="--exclude-ignore .brickstrap-tar-exclude"
-    else
-        if docker run --rm --user root $BRICKSTRAP_DOCKER_IMAGE_NAME test -f /brickstrap/_tar-exclude; then
-            BRICKSTRAP_TAR_EXCLUDE_OPTION="--exclude-from /brickstrap/_tar-exclude"
-        fi
+    elif docker run --rm --user root $BRICKSTRAP_DOCKER_IMAGE_NAME test -f /brickstrap/_tar-exclude; then
+        BRICKSTRAP_TAR_EXCLUDE_OPTION="--exclude-from /brickstrap/_tar-exclude"
     fi
 
     # Then create the actual tar archive
