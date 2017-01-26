@@ -111,14 +111,12 @@ a real-life example of how Docker images are created for use with `brickstrap`.
     This directory becomes the boot partition (FAT) of the disk image. Place
     any boot files here.
 
-* __The `/brickstrap/_report` directory__
+* __The `/brickstrap/_report/` directory__
 
     Any executable files in this directory or its subdirectories will be run as
     part of the `brickstrap create-report` command. The files should save any
-    reports in the `brickstrap/_report/_out` directory, which is bind-mounted
-    to the *report-directory* on the host system given by the command. Note:
-    This will have the effect of running any executable files inside of
-    *report-directory* too. The `BRICKSTRAP_DOCKER_IMAGE_NAME` environment
+    reports to `/brickstrap/_report/_out/` (the `_out/` directory will be
+    created automatically). The `BRICKSTRAP_DOCKER_IMAGE_NAME` environment
     variable will be set to *docker-image* when these commands are executed.
 
 
