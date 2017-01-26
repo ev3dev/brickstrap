@@ -1,3 +1,11 @@
+brickstrap (0.6.3) trusty; urgency=medium
+
+  * Exclude host directories when creating tar
+  * Use container instead of volumes when creating tar
+  * Use docker container instead of volumes for reports
+
+ -- David Lechner <david@lechnology.com>  Wed, 25 Jan 2017 23:18:47 -0600
+
 brickstrap (0.6.2) trusty; urgency=medium
 
   * Fix tar archive owned by root:root
