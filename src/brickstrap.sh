@@ -56,12 +56,12 @@ function brickstrap_create_tar()
 
     echo "Checking docker image tar version..."
 
-    BRICKSTRAP_DOCKER_IMAGE_TAR_VERSION=$(docker run --rm --user root $BRICKSTRAP_DOCKER_IMAGE_NAME \
-        dpkg-query --show --showformat '${Version}' tar)
-
+    BRICKSTRAP_DOCKER_IMAGE_TAR_VERSION="$(docker run --rm --user root $BRICKSTRAP_DOCKER_IMAGE_NAME \
+        tar --version | head -1 | cut -d\  -f 4)"
     echo "tar $BRICKSTRAP_DOCKER_IMAGE_TAR_VERSION"
 
-    if dpkg --compare-versions $BRICKSTRAP_DOCKER_IMAGE_TAR_VERSION ge 1.28; then
+    SORTED_VERSION="$(echo "${BRICKSTRAP_DOCKER_IMAGE_TAR_VERSION}"$'\n'"1.28" | sort -V | head -1)"
+    if [ "${SORTED_VERSION}" = "1.28" ]; then # BRICKSTRAP_DOCKER_IMAGE_TAR_VERSION >= 1.28
         BRICKSTRAP_TAR_EXCLUDE_OPTION="--exclude-ignore .brickstrap-tar-exclude"
     elif docker run --rm --user root $BRICKSTRAP_DOCKER_IMAGE_NAME test -f /brickstrap/_tar-exclude; then
         BRICKSTRAP_TAR_EXCLUDE_OPTION="--exclude-from /brickstrap/_tar-exclude"
