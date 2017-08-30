@@ -51,7 +51,7 @@ function brickstrap_create_tar()
         exit 1
     fi
 
-    # --exclude-ignore requires tar > 1.27, so first we check the tar version in
+    # --exclude-ignore requires tar > 1.27.1, so first we check the tar version in
     # the docker image.
 
     echo "Checking docker image tar version..."
@@ -60,8 +60,8 @@ function brickstrap_create_tar()
         tar --version | head -1 | cut -d\  -f 4)"
     echo "tar $BRICKSTRAP_DOCKER_IMAGE_TAR_VERSION"
 
-    SORTED_VERSION="$(echo "${BRICKSTRAP_DOCKER_IMAGE_TAR_VERSION}"$'\n'"1.27" | sort -Vr | head -1)"
-    if [ "${SORTED_VERSION}" != "1.27" ]; then # BRICKSTRAP_DOCKER_IMAGE_TAR_VERSION > 1.27
+    SORTED_VERSION="$(echo "${BRICKSTRAP_DOCKER_IMAGE_TAR_VERSION}"$'\n'"1.27.1" | sort -Vr | head -1)"
+    if [ "${SORTED_VERSION}" != "1.27.1" ]; then # BRICKSTRAP_DOCKER_IMAGE_TAR_VERSION > 1.27.1
         BRICKSTRAP_TAR_EXCLUDE_OPTION="--exclude-ignore .brickstrap-tar-exclude"
     elif docker run --rm --user root $BRICKSTRAP_DOCKER_IMAGE_NAME test -f /brickstrap/_tar-exclude; then
         BRICKSTRAP_TAR_EXCLUDE_OPTION="--exclude-from /brickstrap/_tar-exclude"
