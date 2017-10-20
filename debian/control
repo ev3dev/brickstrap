@@ -4,8 +4,8 @@ Section: misc
 Priority: optional
 Standards-Version: 3.9.5
 Build-Depends: debhelper (>=8.0.0), pandoc
-VCS-Git: git://github.com/ev3dev-dpkg/brickstrap.git
-VCS-Browser: https://github.com/ev3dev-dpkg/brickstrap.git
+VCS-Git: https://github.com/ev3dev/brickstrap.git
+VCS-Browser: https://github.com/ev3dev/brickstrap.git
 
 Package: brickstrap
 Architecture: all
