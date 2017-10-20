@@ -1,3 +1,12 @@
+brickstrap (0.6.4) trusty; urgency=medium
+
+  * Reduce default size to 3600M
+
+  [ hashworks ]
+  * Use built-in tar version command instead of dpkg (#64)
+
+ -- David Lechner <david@lechnology.com>  Fri, 20 Oct 2017 16:32:17 -0500
+
 brickstrap (0.6.3) trusty; urgency=medium
 
   * Exclude host directories when creating tar
