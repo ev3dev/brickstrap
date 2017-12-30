@@ -9,7 +9,7 @@ VCS-Browser: https://github.com/ev3dev/brickstrap.git
 
 Package: brickstrap
 Architecture: all
-Depends: coreutils, docker-engine, libguestfs-tools, ${misc:Depends}
+Depends: coreutils, docker | docker-ce, libguestfs-tools, ${misc:Depends}
 Recommends: qemu-user-static
 Description: Create bootable disk images from Docker images
  Tool to create bootable disk images from Docker images targeted at embedded
