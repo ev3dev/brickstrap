@@ -1,3 +1,9 @@
+brickstrap (0.6.5) trusty; urgency=medium
+
+  * Update docker dependency
+
+ -- David Lechner <david@lechnology.com>  Sat, 30 Dec 2017 16:20:50 -0600
+
 brickstrap (0.6.4) trusty; urgency=medium
 
   * Reduce default size to 3600M
