@@ -1,2 +1,2 @@
 src/brickstrap.sh usr/share/brickstrap/
-debian/packages-brickstrap /usr/lib/x86_64-linux-gnu/guestfs/supermin.d/packages/
+debian/packages-brickstrap /usr/lib/x86_64-linux-gnu/guestfs/supermin.d/
