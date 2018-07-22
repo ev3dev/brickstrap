@@ -1,3 +1,10 @@
+brickstrap (0.6.7) trusty; urgency=medium
+
+  * add linux-image as dependency
+  * workaround for Ubuntu bug 1777058
+
+ -- David Lechner <david@lechnology.com>  Sat, 21 Jul 2018 20:29:28 -0500
+
 brickstrap (0.6.5) trusty; urgency=medium
 
   * Update docker dependency
