@@ -1,3 +1,9 @@
+brickstrap (0.6.8) trusty; urgency=medium
+
+  * fix incorrect supermin packages install directory
+
+ -- David Lechner <david@lechnology.com>  Sun, 22 Jul 2018 13:10:41 -0500
+
 brickstrap (0.6.7) trusty; urgency=medium
 
   * add linux-image as dependency
