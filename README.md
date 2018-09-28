@@ -22,15 +22,17 @@ the source code.
 
     git clone git://github.com/ev3dev/brickstrap
     brickstrap/src/brickstrap.sh create-tar my-docker-image my.tar
+    
+(Watch out for [this bug](https://bugs.launchpad.net/ubuntu/+source/libguestfs/+bug/1777058)
+in Ubuntu 18.04. A workaround for this bug is included in the debian package mentioned below,
+so you only need to manually fix the bug when running brickstrap from source.)
 
-There is also a Debian package available for Ubuntu trusty in the ev3dev package
+There is also a Debian package available for Ubuntu in the ev3dev tools package
 repository.
 
-    sudo apt-key adv --keyserver pgp.mit.edu --recv-keys 2B210565
-    sudo apt-add-repository "deb http://archive.ev3dev.org/ubuntu trusty main"
-    sudo apt-get update
-    sudo apt-get install brickstrap
-
+    sudo add-apt-repository ppa:ev3dev/tools
+    sudo apt update
+    sudo ap install brickstrap
 
 If you just want to run from git, make sure you have these packages installed.
 They will be installed automatically if you use the `brickstrap` package, so you
