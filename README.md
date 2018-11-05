@@ -32,7 +32,7 @@ repository.
 
     sudo add-apt-repository ppa:ev3dev/tools
     sudo apt update
-    sudo ap install brickstrap
+    sudo apt install brickstrap
 
 If you just want to run from git, make sure you have these packages installed.
 They will be installed automatically if you use the `brickstrap` package, so you
