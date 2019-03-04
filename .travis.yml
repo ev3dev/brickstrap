@@ -7,6 +7,9 @@ env:
   - IMAGE=ev3dev-stretch-bone-generic BEAGLE_BOOT=true
   - IMAGE=ev3dev-stretch-rpi-generic
   - IMAGE=ev3dev-stretch-rpi2-generic
+  - IMAGE=ev3dev-buster-ev3-generic
+  - IMAGE=ev3dev-buster-rpi-generic
+  - IMAGE=ev3dev-buster-rpi2-generic
   global:
   - BRICKSTRAP_IMAGE_FILE_SIZE=1800M
   - BRICKSTRAP_BOOT_PART_LABEL=EV3DEV_BOOT
