@@ -191,19 +191,24 @@ function brickstrap_create_image()
 
     BRICKSTRAP_FAT_START=$(brickstrap_mb_to_sectors 4)
     BRICKSTRAP_EXT_START=$(brickstrap_mb_to_sectors 52)
+    BRICKSTRAP_F2FS_START=$(brickstrap_mb_to_sectors 208)
 
     echo "Creating $BRICKSTRAP_IMAGE_FILE_NAME from $BRICKSTRAP_TAR_FILE..."
 
     guestfish -N "$BRICKSTRAP_IMAGE_FILE_NAME"=disk:$BRICKSTRAP_IMAGE_FILE_SIZE -- \
         part-init /dev/sda mbr : \
         part-add /dev/sda primary $BRICKSTRAP_FAT_START $(( $BRICKSTRAP_EXT_START - 1 )) : \
-        part-add /dev/sda primary $BRICKSTRAP_EXT_START -1 : \
+        part-add /dev/sda primary $BRICKSTRAP_EXT_START $(( $BRICKSTRAP_F2FS_START - 1 )) : \
+        part-add /dev/sda primary $BRICKSTRAP_F2FS_START -1 : \
         part-set-mbr-id /dev/sda 1 0x0b : \
         mkfs fat /dev/sda1 : \
         set-label /dev/sda1 ${BRICKSTRAP_BOOT_PART_LABEL} : \
         mkfs ext4 /dev/sda2 : \
-        set-label /dev/sda2 ${BRICKSTRAP_ROOT_PART_LABEL} : \
-        mount /dev/sda2 / : \
+        set-label /dev/sda2 ${BRICKSTRAP_BOOT_PART_LABEL}2 : \
+        mkfs f2fs /dev/sda3 label:${BRICKSTRAP_ROOT_PART_LABEL} : \
+        mount /dev/sda3 / : \
+        mkdir-p /boot : \
+        mount /dev/sda2 /boot : \
         mkdir-p /boot/flash : \
         mount /dev/sda1 /boot/flash : \
         tar-in "$BRICKSTRAP_TAR_FILE" / : \
