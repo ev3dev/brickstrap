@@ -39,10 +39,10 @@ They will be installed automatically if you use the `brickstrap` package, so you
 can skip this if that is the case. You only need `qemu-user-static` if the
 Docker image is for a foreign architecture.
 
-    sudo apt-get install docker-engine libguestfs-tools qemu-user-static
+    sudo apt-get install docker-ce libguestfs-tools qemu-user-static
 
 If you have never used `libguestfs` before, you need to set it up. **Note:**
-`update-guestfs-appliance` may not exist in newer versions of guestfs. If get
+`update-guestfs-appliance` may not exist in newer versions of guestfs. If you get
 an error for that command, ignore it and move on.
 
     # create a supermin appliance
