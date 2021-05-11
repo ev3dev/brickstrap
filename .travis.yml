@@ -1,15 +1,9 @@
 language: bash
 sudo: required
-dist: trusty
+dist: focal
 env:
   matrix:
-  - IMAGE=ev3dev-stretch-ev3-generic
-  - IMAGE=ev3dev-stretch-bone-generic BEAGLE_BOOT=true
-  - IMAGE=ev3dev-stretch-rpi-generic
-  - IMAGE=ev3dev-stretch-rpi2-generic
-  - IMAGE=ev3dev-buster-ev3-generic
-  - IMAGE=ev3dev-buster-rpi-generic
-  - IMAGE=ev3dev-buster-rpi2-generic
+  - IMAGE=ev3dev-bullseye-ev3-generic
   global:
   - BRICKSTRAP_IMAGE_FILE_SIZE=1800M
   - BRICKSTRAP_BOOT_PART_LABEL=EV3DEV_BOOT
@@ -18,7 +12,6 @@ env:
 before_install:
 - sudo apt-get install -y libguestfs-tools qemu-user-static
 before_script:
-- sudo update-guestfs-appliance
 - sudo usermod -a -G kvm $USER
 - sudo chmod +r /boot/vmlinuz-*
 - export DOCKER_IMAGE=ev3dev/$IMAGE

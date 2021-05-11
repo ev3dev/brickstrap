@@ -41,12 +41,8 @@ Docker image is for a foreign architecture.
 
     sudo apt-get install docker-ce libguestfs-tools qemu-user-static
 
-If you have never used `libguestfs` before, you need to set it up. **Note:**
-`update-guestfs-appliance` may not exist in newer versions of guestfs. If you get
-an error for that command, ignore it and move on.
+If you have never used `libguestfs` before, you need do some manual steps:
 
-    # create a supermin appliance
-    sudo update-guestfs-appliance
     # add yourself to the kvm group
     sudo usermod -a -G kvm $USER
     newgrp kvm # or log out and log back in
