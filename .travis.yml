@@ -1,5 +1,4 @@
 language: bash
-sudo: required
 dist: focal
 env:
   matrix:
@@ -8,7 +7,6 @@ env:
   - BRICKSTRAP_IMAGE_FILE_SIZE=1800M
   - BRICKSTRAP_BOOT_PART_LABEL=EV3DEV_BOOT
   - BRICKSTRAP_ROOT_PART_LABEL=EV3DEV_ROOTFS
-  - secure: LuSry8IhdFnMu/5RD7P9CJkpM4ezocCmAmVhwzkP7+zEw/MEO3mW4Y0BxUP1gfxEPinL0LCcCYDS7Qa/dfVePRSPH/53BuzhwpX4jDSARc1tFU+59bN+CaiH/HXZFoWXkMAXi+OClofGm1B/Ts/RPNqtZ/0fx7QYrXczf5OWg7w=
 before_install:
 - sudo apt-get install -y libguestfs-tools qemu-user-static
 before_script:
@@ -27,8 +25,9 @@ script:
 - src/brickstrap.sh create-report $DOCKER_IMAGE $HOME/report
 - test -f "$HOME/report/$DISK_IMAGE-release-notes.md"
 after_success:
-- if [ "$TRAVIS_PULL_REQUEST" == "false" ] && [ "$TRAVIS_BRANCH" == "snapshot" ]; then
+- |
+  if [ "$TRAVIS_PULL_REQUEST" == "false" ] && [ "$TRAVIS_BRANCH" == "snapshot" ]; then
     travis_wait xz --verbose -9 $DISK_IMAGE.img &&
     mv $DISK_IMAGE.img.xz snapshot-$DISK_IMAGE.img.xz &&
-    curl -u$LOGIN -T snapshot-$DISK_IMAGE.img.xz https://oss.jfrog.org/artifactory/oss-snapshot-local/org/ev3dev/brickstrap/$(date --iso-8601)/;
+    curl -H"Authorization: Bearer $JFROG_TOKEN" -T snapshot-$DISK_IMAGE.img.xz "https://ev3dev.jfrog.io/artifactory/snapshots/$(date --iso-8601)/";
   fi
