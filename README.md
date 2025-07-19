@@ -20,7 +20,7 @@ Installation
 Since `brickstrap` is essentially just a bash script, you can run directly from
 the source code.
 
-    git clone git://github.com/ev3dev/brickstrap
+    git clone https://github.com/ev3dev/brickstrap
     brickstrap/src/brickstrap.sh create-tar my-docker-image my.tar
     
 (Watch out for [this bug](https://bugs.launchpad.net/ubuntu/+source/libguestfs/+bug/1777058)
