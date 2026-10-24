@@ -192,6 +192,15 @@ function brickstrap_create_image()
     BRICKSTRAP_FAT_START=$(brickstrap_mb_to_sectors 4)
     BRICKSTRAP_EXT_START=$(brickstrap_mb_to_sectors 52)
 
+    # e2fsprogs >= 1.47 enables orphan_file by default, but older e2fsck in the
+    # target image doesn't support it, so the boot-time fsck would fail.
+    BRICKSTRAP_EXT4_FEATURES=""
+    BRICKSTRAP_MKE2FS_VERSION="$(mke2fs -V 2>&1 | head -1 | cut -d\  -f 2)"
+    SORTED_VERSION="$(echo "${BRICKSTRAP_MKE2FS_VERSION}"$'\n'"1.47" | sort -V | head -1)"
+    if [ -n "${BRICKSTRAP_MKE2FS_VERSION}" ] && [ "${SORTED_VERSION}" = "1.47" ]; then
+        BRICKSTRAP_EXT4_FEATURES="features:^orphan_file"
+    fi
+
     echo "Creating $BRICKSTRAP_IMAGE_FILE_NAME from $BRICKSTRAP_TAR_FILE..."
 
     guestfish -N "$BRICKSTRAP_IMAGE_FILE_NAME"=disk:$BRICKSTRAP_IMAGE_FILE_SIZE -- \
@@ -201,7 +210,7 @@ function brickstrap_create_image()
         part-set-mbr-id /dev/sda 1 0x0b : \
         mkfs fat /dev/sda1 : \
         set-label /dev/sda1 ${BRICKSTRAP_BOOT_PART_LABEL} : \
-        mkfs ext4 /dev/sda2 : \
+        mkfs ext4 /dev/sda2 $BRICKSTRAP_EXT4_FEATURES : \
         set-label /dev/sda2 ${BRICKSTRAP_ROOT_PART_LABEL} : \
         mount /dev/sda2 / : \
         mkdir-p /boot/flash : \
